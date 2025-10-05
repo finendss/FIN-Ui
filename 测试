@@ -5,69 +5,107 @@ local RunService = game:GetService("RunService")
 -- 创建加载界面
 local player = Players.LocalPlayer
 local gui = Instance.new("ScreenGui")
-gui.Name = "ScriptLoader"
+gui.Name = "PremiumLoader"
+gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 gui.Parent = player:WaitForChild("PlayerGui")
 
--- 创建主容器
+-- 创建背景模糊效果
+local blurEffect = Instance.new("BlurEffect")
+blurEffect.Size = 0
+blurEffect.Parent = game:GetService("Lighting")
+
+-- 主容器
 local mainFrame = Instance.new("Frame")
-mainFrame.Size = UDim2.new(0, 350, 0, 180)
-mainFrame.Position = UDim2.new(0.5, -175, 0.5, -90)
-mainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
-mainFrame.BackgroundTransparency = 0.05
+mainFrame.Size = UDim2.new(0, 400, 0, 280)
+mainFrame.Position = UDim2.new(0.5, -200, 0.5, -140)
+mainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 25)
+mainFrame.BackgroundTransparency = 1
 mainFrame.BorderSizePixel = 0
 mainFrame.Parent = gui
 
+-- 圆角
 local corner = Instance.new("UICorner")
-corner.CornerRadius = UDim.new(0, 12)
+corner.CornerRadius = UDim.new(0, 16)
 corner.Parent = mainFrame
 
--- 添加阴影效果
-local shadow = Instance.new("ImageLabel")
-shadow.Size = UDim2.new(1, 10, 1, 10)
-shadow.Position = UDim2.new(0, -5, 0, -5)
-shadow.BackgroundTransparency = 1
-shadow.Image = "rbxassetid://5554236805"
-shadow.ImageColor3 = Color3.fromRGB(0, 0, 0)
-shadow.ImageTransparency = 0.8
-shadow.ScaleType = Enum.ScaleType.Slice
-shadow.SliceCenter = Rect.new(23,23,277,277)
-shadow.Parent = mainFrame
+-- 玻璃态背景效果
+local backgroundGradient = Instance.new("UIGradient")
+backgroundGradient.Rotation = 90
+backgroundGradient.Color = ColorSequence.new({
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(20, 20, 35)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(15, 15, 25))
+})
+mainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 35)
+
+-- 背景边框发光效果
+local glowStroke = Instance.new("UIStroke")
+glowStroke.Color = Color3.fromRGB(0, 150, 255)
+glowStroke.Thickness = 2
+glowStroke.Transparency = 0.7
+glowStroke.Parent = mainFrame
 
 -- 标题
 local title = Instance.new("TextLabel")
-title.Size = UDim2.new(0.8, 0, 0, 40)
-title.Position = UDim2.new(0.1, 0, 0.1, 0)
+title.Size = UDim2.new(0.8, 0, 0, 50)
+title.Position = UDim2.new(0.1, 0, 0.05, 0)
 title.BackgroundTransparency = 1
-title.Text = "脚本加载器"
+title.Text = "SCRIPT LOADER"
 title.TextColor3 = Color3.fromRGB(255, 255, 255)
 title.TextScaled = true
 title.Font = Enum.Font.GothamBold
+title.TextTransparency = 1
 title.Parent = mainFrame
+
+-- 副标题
+local subtitle = Instance.new("TextLabel")
+subtitle.Size = UDim2.new(0.8, 0, 0, 25)
+subtitle.Position = UDim2.new(0.1, 0, 0.18, 0)
+subtitle.BackgroundTransparency = 1
+subtitle.Text = "Premium Edition"
+subtitle.TextColor3 = Color3.fromRGB(180, 180, 220)
+subtitle.TextScaled = true
+subtitle.Font = Enum.Font.Gotham
+subtitle.TextTransparency = 1
+subtitle.Parent = mainFrame
 
 -- 状态文字
 local statusText = Instance.new("TextLabel")
-statusText.Size = UDim2.new(0.8, 0, 0, 25)
-statusText.Position = UDim2.new(0.1, 0, 0.3, 0)
+statusText.Size = UDim2.new(0.8, 0, 0, 30)
+statusText.Position = UDim2.new(0.1, 0, 0.45, 0)
 statusText.BackgroundTransparency = 1
-statusText.Text = "正在初始化..."
-statusText.TextColor3 = Color3.fromRGB(200, 200, 200)
+statusText.Text = "Initializing..."
+statusText.TextColor3 = Color3.fromRGB(220, 220, 255)
 statusText.TextScaled = true
 statusText.Font = Enum.Font.Gotham
+statusText.TextTransparency = 1
 statusText.Parent = mainFrame
 
--- 进度条背景
-local progressBackground = Instance.new("Frame")
-progressBackground.Size = UDim2.new(0.8, 0, 0, 25)
-progressBackground.Position = UDim2.new(0.1, 0, 0.55, 0)
-progressBackground.BackgroundColor3 = Color3.fromRGB(50, 50, 70)
-progressBackground.BorderSizePixel = 0
-progressBackground.Parent = mainFrame
+-- 进度条容器
+local progressContainer = Instance.new("Frame")
+progressContainer.Size = UDim2.new(0.8, 0, 0, 25)
+progressContainer.Position = UDim2.new(0.1, 0, 0.6, 0)
+progressContainer.BackgroundColor3 = Color3.fromRGB(40, 40, 60)
+progressContainer.BackgroundTransparency = 1
+progressContainer.BorderSizePixel = 0
+progressContainer.Parent = mainFrame
 
 local progressCorner = Instance.new("UICorner")
 progressCorner.CornerRadius = UDim.new(0, 12)
-progressCorner.Parent = progressBackground
+progressCorner.Parent = progressContainer
 
--- 进度条前景
+-- 进度条背景
+local progressBackground = Instance.new("Frame")
+progressBackground.Size = UDim2.new(1, 0, 1, 0)
+progressBackground.Position = UDim2.new(0, 0, 0, 0)
+progressBackground.BackgroundColor3 = Color3.fromRGB(30, 30, 50)
+progressBackground.BorderSizePixel = 0
+progressBackground.Parent = progressContainer
+
+local bgCorner = Instance.new("UICorner")
+bgCorner.CornerRadius = UDim.new(0, 12)
+bgCorner.Parent = progressBackground
+
+-- 进度条前景（渐变效果）
 local progressBar = Instance.new("Frame")
 progressBar.Size = UDim2.new(0, 0, 1, 0)
 progressBar.Position = UDim2.new(0, 0, 0, 0)
@@ -79,27 +117,211 @@ local barCorner = Instance.new("UICorner")
 barCorner.CornerRadius = UDim.new(0, 12)
 barCorner.Parent = progressBar
 
+-- 进度条渐变
+local progressGradient = Instance.new("UIGradient")
+progressGradient.Rotation = 90
+progressGradient.Color = ColorSequence.new({
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 200, 255)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 120, 255))
+})
+progressGradient.Parent = progressBar
+
+-- 进度条发光效果
+local progressGlow = Instance.new("UIStroke")
+progressGlow.Color = Color3.fromRGB(0, 200, 255)
+progressGlow.Thickness = 2
+progressGlow.Transparency = 0.8
+progressGlow.Parent = progressBar
+
 -- 百分比文字
 local percentText = Instance.new("TextLabel")
-percentText.Size = UDim2.new(0.8, 0, 0, 25)
-percentText.Position = UDim2.new(0.1, 0, 0.75, 0)
+percentText.Size = UDim2.new(0.8, 0, 0, 30)
+percentText.Position = UDim2.new(0.1, 0, 0.72, 0)
 percentText.BackgroundTransparency = 1
 percentText.Text = "0%"
-percentText.TextColor3 = Color3.fromRGB(200, 200, 200)
+percentText.TextColor3 = Color3.fromRGB(200, 200, 255)
 percentText.TextScaled = true
-percentText.Font = Enum.Font.Gotham
+percentText.Font = Enum.Font.GothamBold
+percentText.TextTransparency = 1
 percentText.Parent = mainFrame
 
--- 加载函数
+-- 装饰性元素 - 旋转圆圈
+local spinningCircle = Instance.new("Frame")
+spinningCircle.Size = UDim2.new(0, 80, 0, 80)
+spinningCircle.Position = UDim2.new(0.5, -40, 0.85, -40)
+spinningCircle.BackgroundTransparency = 1
+spinningCircle.Parent = mainFrame
+
+local circleOuter = Instance.new("Frame")
+circleOuter.Size = UDim2.new(1, 0, 1, 0)
+circleOuter.BackgroundTransparency = 1
+circleOuter.BorderSizePixel = 0
+circleOuter.Parent = spinningCircle
+
+local circleInner = Instance.new("Frame")
+circleInner.Size = UDim2.new(0.7, 0, 0.7, 0)
+circleInner.Position = UDim2.new(0.15, 0, 0.15, 0)
+circleInner.BackgroundTransparency = 1
+circleInner.BorderSizePixel = 0
+circleInner.Parent = spinningCircle
+
+-- 创建圆形边框
+local function createCircleArc(parent, thickness, color, radius)
+    local arc = Instance.new("Frame")
+    arc.Size = UDim2.new(0, radius * 2, 0, radius * 2)
+    arc.BackgroundTransparency = 1
+    arc.Parent = parent
+    
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(1, 0)
+    corner.Parent = arc
+    
+    local stroke = Instance.new("UIStroke")
+    stroke.Color = color
+    stroke.Thickness = thickness
+    stroke.Transparency = 0.3
+    stroke.Parent = arc
+    
+    return arc
+end
+
+-- 创建多个圆形边框
+local outerArc = createCircleArc(circleOuter, 3, Color3.fromRGB(0, 150, 255), 40)
+local innerArc = createCircleArc(circleInner, 2, Color3.fromRGB(0, 200, 255), 28)
+
+-- 粒子效果容器
+local particlesContainer = Instance.new("Frame")
+particlesContainer.Size = UDim2.new(1, 0, 1, 0)
+particlesContainer.BackgroundTransparency = 1
+particlesContainer.Parent = mainFrame
+
+-- 初始化函数
+local function initializeLoader()
+    -- 淡入模糊效果
+    local blurTween = TweenService:Create(blurEffect, TweenInfo.new(0.8, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+        Size = 12
+    })
+    blurTween:Play()
+    
+    -- 主容器淡入
+    local frameTween = TweenService:Create(mainFrame, TweenInfo.new(0.8, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+        BackgroundTransparency = 0
+    })
+    frameTween:Play()
+    
+    -- 文本淡入
+    local titleTween = TweenService:Create(title, TweenInfo.new(0.8, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+        TextTransparency = 0
+    })
+    
+    local subtitleTween = TweenService:Create(subtitle, TweenInfo.new(0.8, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+        TextTransparency = 0
+    })
+    
+    local statusTween = TweenService:Create(statusText, TweenInfo.new(0.8, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+        TextTransparency = 0
+    })
+    
+    local percentTween = TweenService:Create(percentText, TweenInfo.new(0.8, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+        TextTransparency = 0
+    })
+    
+    local progressTween = TweenService:Create(progressContainer, TweenInfo.new(0.8, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+        BackgroundTransparency = 0
+    })
+    
+    titleTween:Play()
+    subtitleTween:Play()
+    statusTween:Play()
+    percentTween:Play()
+    progressTween:Play()
+    
+    -- 等待淡入完成
+    wait(0.8)
+end
+
+-- 旋转动画函数
+local function startRotationAnimation()
+    local rotation = 0
+    local connection = RunService.RenderStepped:Connect(function(delta)
+        rotation = (rotation + 60 * delta) % 360
+        circleOuter.Rotation = rotation
+        circleInner.Rotation = -rotation * 1.5
+    end)
+    return connection
+end
+
+-- 粒子效果函数
+local function createParticleEffect()
+    spawn(function()
+        while gui.Parent do
+            local particle = Instance.new("Frame")
+            particle.Size = UDim2.new(0, 4, 0, 4)
+            particle.Position = UDim2.new(math.random(), -2, math.random(), -2)
+            particle.BackgroundColor3 = Color3.fromRGB(0, 180, 255)
+            particle.BorderSizePixel = 0
+            particle.Parent = particlesContainer
+            
+            local corner = Instance.new("UICorner")
+            corner.CornerRadius = UDim.new(1, 0)
+            corner.Parent = particle
+            
+            -- 粒子动画
+            local tweenInfo = TweenInfo.new(1.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+            local tween = TweenService:Create(particle, tweenInfo, {
+                Position = UDim2.new(particle.Position.X.Scale, particle.Position.X.Offset, 1.2, 0),
+                BackgroundTransparency = 1,
+                Size = UDim2.new(0, 0, 0, 0)
+            })
+            
+            tween:Play()
+            tween.Completed:Connect(function()
+                particle:Destroy()
+            end)
+            
+            wait(0.1)
+        end
+    end)
+end
+
+-- 进度条脉冲效果
+local function startProgressPulse()
+    spawn(function()
+        while gui.Parent do
+            local tween1 = TweenService:Create(progressGlow, TweenInfo.new(0.8, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {
+                Transparency = 0.3
+            })
+            
+            local tween2 = TweenService:Create(progressGlow, TweenInfo.new(0.8, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {
+                Transparency = 0.8
+            })
+            
+            tween1:Play()
+            tween1.Completed:Wait()
+            tween2:Play()
+            tween2.Completed:Wait()
+        end
+    end)
+end
+
+-- 主加载函数
 local function loadScriptWithProgress()
+    -- 初始化加载器
+    initializeLoader()
+    
+    -- 启动各种动画
+    local rotationConnection = startRotationAnimation()
+    createParticleEffect()
+    startProgressPulse()
+    
     local success, result = pcall(function()
         -- 模拟加载步骤
         local steps = {
-            {"检查环境...", 0.8},
-            {"初始化模块...", 1.2},
-            {"下载脚本...", 2.0},
-            {"验证代码...", 0.7},
-            {"准备执行...", 0.5}
+            {"Checking Environment...", 0.8},
+            {"Loading Modules...", 1.5},
+            {"Downloading Resources...", 2.2},
+            {"Verifying Security...", 1.0},
+            {"Finalizing Setup...", 0.8}
         }
         
         local totalTime = 0
@@ -111,13 +333,13 @@ local function loadScriptWithProgress()
         for i, step in ipairs(steps) do
             statusText.Text = step[1]
             
-            local startProgress = (currentTime / totalTime) * (progressBackground.AbsoluteSize.X)
-            local endProgress = ((currentTime + step[2]) / totalTime) * (progressBackground.AbsoluteSize.X)
+            local startProgress = (currentTime / totalTime)
+            local endProgress = ((currentTime + step[2]) / totalTime)
             
             -- 进度条动画
             local tweenInfo = TweenInfo.new(step[2], Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
             local tween = TweenService:Create(progressBar, tweenInfo, {
-                Size = UDim2.new(0, endProgress, 1, 0)
+                Size = UDim2.new(endProgress, 0, 1, 0)
             })
             
             tween:Play()
@@ -135,7 +357,7 @@ local function loadScriptWithProgress()
         end
         
         -- 加载完成
-        statusText.Text = "正在执行脚本..."
+        statusText.Text = "Executing Script..."
         percentText.Text = "100%"
         
         -- 确保进度条完全填满
@@ -144,16 +366,19 @@ local function loadScriptWithProgress()
         wait(0.5)
         
         -- 实际加载外部脚本
-        loadstring(game:HttpGet("\104\116\116\112\115\058\047\047\112\097\110\100\097\100\101\118\101\108\111\112\109\101\110\116\046\110\101\116\047\118\105\114\116\117\097\108\047\102\105\108\101\047\055\052\101\053\053\049\049\102\054\051\102\099\050\049\052\054"))()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/finendss/Chinese/refs/heads/main/XF%20Chinese%20script"))()
         
-        statusText.Text = "脚本加载完成!"
+        statusText.Text = "Script Loaded Successfully!"
         
-        wait(1)
+        wait(1.5)
         
-        -- 淡出动画
+        -- 关闭动画
+        rotationConnection:Disconnect()
+        
+        -- 淡出所有元素
         local fadeTween = TweenService:Create(mainFrame, TweenInfo.new(0.8, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
             BackgroundTransparency = 1,
-            Position = UDim2.new(0.5, -175, 0.4, -90)
+            Position = UDim2.new(0.5, -200, 0.4, -140)
         })
         
         local textFadeTween = TweenService:Create(title, TweenInfo.new(0.8), {
@@ -168,51 +393,58 @@ local function loadScriptWithProgress()
             TextTransparency = 1
         })
         
+        local progressFadeTween = TweenService:Create(progressContainer, TweenInfo.new(0.8), {
+            BackgroundTransparency = 1
+        })
+        
+        local blurFadeTween = TweenService:Create(blurEffect, TweenInfo.new(0.8), {
+            Size = 0
+        })
+        
         fadeTween:Play()
         textFadeTween:Play()
         statusFadeTween:Play()
         percentFadeTween:Play()
+        progressFadeTween:Play()
+        blurFadeTween:Play()
         
         fadeTween.Completed:Wait()
         gui:Destroy()
+        blurEffect:Destroy()
     end)
     
     -- 错误处理
     if not success then
-        statusText.Text = "加载失败!"
-        percentText.Text = "错误"
+        rotationConnection:Disconnect()
+        
+        statusText.Text = "Load Failed!"
+        percentText.Text = "Error"
         progressBar.BackgroundColor3 = Color3.fromRGB(255, 50, 50)
+        progressGradient.Color = ColorSequence.new({
+            ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 80, 80)),
+            ColorSequenceKeypoint.new(1, Color3.fromRGB(200, 0, 0))
+        })
         
         wait(3)
         
         local fadeTween = TweenService:Create(mainFrame, TweenInfo.new(0.5), {
             BackgroundTransparency = 1
         })
+        
+        local blurFadeTween = TweenService:Create(blurEffect, TweenInfo.new(0.5), {
+            Size = 0
+        })
+        
         fadeTween:Play()
+        blurFadeTween:Play()
+        
         fadeTween.Completed:Wait()
         gui:Destroy()
+        blurEffect:Destroy()
         
-        warn("脚本加载错误: " .. tostring(result))
+        warn("Script Load Error: " .. tostring(result))
     end
 end
 
 -- 开始加载
 spawn(loadScriptWithProgress)
-
--- 添加一些视觉效果
-spawn(function()
-    while gui.Parent do
-        -- 进度条闪烁效果
-        local glowTween = TweenService:Create(progressBar, TweenInfo.new(0.5, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {
-            BackgroundTransparency = 0.2
-        })
-        glowTween:Play()
-        glowTween.Completed:Wait()
-        
-        local unglowTween = TweenService:Create(progressBar, TweenInfo.new(0.5, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {
-            BackgroundTransparency = 0
-        })
-        unglowTween:Play()
-        unglowTween.Completed:Wait()
-    end
-end)
