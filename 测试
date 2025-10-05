@@ -145,46 +145,6 @@ percentText.Font = Enum.Font.GothamBold
 percentText.TextTransparency = 1
 percentText.Parent = mainFrame
 
--- 装饰性元素 - 旋转圆圈
-local spinningCircle = Instance.new("Frame")
-spinningCircle.Size = UDim2.new(0, 80, 0, 80)
-spinningCircle.Position = UDim2.new(0.5, -40, 0.85, -40)
-spinningCircle.BackgroundTransparency = 1
-spinningCircle.Parent = mainFrame
-
-local circleOuter = Instance.new("Frame")
-circleOuter.Size = UDim2.new(1, 0, 1, 0)
-circleOuter.BackgroundTransparency = 1
-circleOuter.BorderSizePixel = 0
-circleOuter.Parent = spinningCircle
-
-local circleInner = Instance.new("Frame")
-circleInner.Size = UDim2.new(0.7, 0, 0.7, 0)
-circleInner.Position = UDim2.new(0.15, 0, 0.15, 0)
-circleInner.BackgroundTransparency = 1
-circleInner.BorderSizePixel = 0
-circleInner.Parent = spinningCircle
-
--- 创建圆形边框
-local function createCircleArc(parent, thickness, color, radius)
-    local arc = Instance.new("Frame")
-    arc.Size = UDim2.new(0, radius * 2, 0, radius * 2)
-    arc.BackgroundTransparency = 1
-    arc.Parent = parent
-    
-    local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(1, 0)
-    corner.Parent = arc
-    
-    local stroke = Instance.new("UIStroke")
-    stroke.Color = color
-    stroke.Thickness = thickness
-    stroke.Transparency = 0.3
-    stroke.Parent = arc
-    
-    return arc
-end
-
 -- 创建多个圆形边框
 local outerArc = createCircleArc(circleOuter, 3, Color3.fromRGB(0, 150, 255), 40)
 local innerArc = createCircleArc(circleInner, 2, Color3.fromRGB(0, 200, 255), 28)
@@ -357,7 +317,7 @@ local function loadScriptWithProgress()
         end
         
         -- 加载完成
-        statusText.Text = "Executing Script..."
+        statusText.Text = "Ready to Execute..."
         percentText.Text = "100%"
         
         -- 确保进度条完全填满
@@ -365,12 +325,10 @@ local function loadScriptWithProgress()
         
         wait(0.5)
         
-        -- 实际加载外部脚本
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/finendss/Chinese/refs/heads/main/XF%20Chinese%20script"))()
+        -- 显示准备执行信息
+        statusText.Text = "Preparing to load script..."
         
-        statusText.Text = "Script Loaded Successfully!"
-        
-        wait(1.5)
+        wait(1)
         
         -- 关闭动画
         rotationConnection:Disconnect()
@@ -408,9 +366,18 @@ local function loadScriptWithProgress()
         progressFadeTween:Play()
         blurFadeTween:Play()
         
+        -- 等待所有淡出动画完成
         fadeTween.Completed:Wait()
+        
+        -- 确保界面完全销毁
         gui:Destroy()
         blurEffect:Destroy()
+        
+        -- 现在动画完全结束，加载脚本
+        statusText.Text = "Loading script..."
+        
+        -- 实际加载外部脚本
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/finendss/Chinese/refs/heads/main/XF%20Chinese%20script"))()
     end)
     
     -- 错误处理
