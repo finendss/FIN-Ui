@@ -1764,4 +1764,186 @@ function createMainWindow()
         end
      end
   })
+
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
+
+local config = {
+    Enabled = false,
+    BaseDistance = 16,
+    ScanInterval = 0.02,
+    BlockCooldown = 0.35,
+    MoveCompBase = 1.5,
+    MoveCompFactor = 0.25,
+    SpeedThreshold = 8,
+    PredictBase = 4,
+    PredictMax = 8,
+    PredictFactor = 0.22,
+    TargetAngle = 50,
+    MinAttackSpeed = 12
+}
+
+local animationIds = {
+    ["126830014841198"] = true,
+    ["126355327951215"] = true,
+    ["121086746534252"] = true,
+    ["18885909645"] = true,
+    ["98456918873918"] = true,
+    ["105458270463374"] = true,
+    ["83829782357897"] = true,
+    ["125403313786645"] = true,
+    ["118298475669935"] = true,
+    ["82113744478546"] = true,
+    ["70371667919898"] = true,
+    ["99135633258223"] = true,
+    ["97167027849946"] = true,
+    ["109230267448394"] = true,
+    ["139835501033932"] = true,
+    ["126896426760253"] = true,
+}
+
+local LocalPlayer = Players.LocalPlayer
+local RemoteEvent = ReplicatedStorage:WaitForChild("Modules"):WaitForChild("Network"):WaitForChild("RemoteEvent")
+local lastBlockTime = 0
+local combatConnection = nil
+
+local function HasTargetAnimation(character)
+    if not character then return false end
+    local humanoid = character:FindFirstChildOfClass("Humanoid")
+    if not humanoid then return false end
+    
+    local animator = humanoid:FindFirstChildOfClass("Animator")
+    if not animator then return false end
+    
+    for _, track in pairs(animator:GetPlayingAnimationTracks()) do
+        if track.Animation then
+            local animId = tostring(track.Animation.AnimationId:match("%d+"))
+            if animationIds[animId] then
+                return true
+            end
+        end
+    end
+    return false
 end
+
+local function GetMoveCompensation()
+    if not LocalPlayer.Character then return 0 end
+    local rootPart = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+    if not rootPart then return 0 end
+    
+    local speed = rootPart.Velocity.Magnitude
+    if speed <= config.SpeedThreshold then return 0 end
+    
+    return config.MoveCompBase + (speed - config.SpeedThreshold) * config.MoveCompFactor
+end
+
+local function GetTotalDetectionRange(killer)
+    local base = config.BaseDistance
+    local moveBonus = GetMoveCompensation()
+    local predict = 0
+    
+    if killer:FindFirstChild("HumanoidRootPart") then
+        local killerSpeed = killer.HumanoidRootPart.Velocity.Magnitude
+        predict = math.min(
+            config.PredictBase + killerSpeed * config.PredictFactor,
+            config.PredictMax
+        )
+    end
+    
+    return base + moveBonus + predict
+end
+
+local function IsTargetingMe(killer)
+    local myCharacter = LocalPlayer.Character
+    if not myCharacter then return false end
+    
+    local myRoot = myCharacter:FindFirstChild("HumanoidRootPart")
+    local killerRoot = killer:FindFirstChild("HumanoidRootPart")
+    if not myRoot or not killerRoot then return false end
+    
+    local toPlayer = (myRoot.Position - killerRoot.Position).Unit
+    local facing = killerRoot.CFrame.LookVector
+    if math.deg(math.acos(toPlayer:Dot(facing))) < config.TargetAngle then
+        return true
+    end
+    
+    local velocity = killerRoot.Velocity
+    if velocity.Magnitude > config.MinAttackSpeed then
+        return velocity.Unit:Dot(toPlayer) > 0.85
+    end
+    
+    return false
+end
+
+local function GetThreateningKillers()
+    local killers = {}
+    local killersFolder = workspace:FindFirstChild("Killers") or workspace:FindFirstChild("Players"):FindFirstChild("Killers")
+    if not killersFolder then return killers end
+    
+    local myCharacter = LocalPlayer.Character
+    if not myCharacter then return killers end
+    
+    local myRoot = myCharacter:FindFirstChild("HumanoidRootPart")
+    if not myRoot then return killers end
+    
+    for _, killer in ipairs(killersFolder:GetChildren()) do
+        if killer:FindFirstChild("HumanoidRootPart") then
+            local killerRoot = killer.HumanoidRootPart
+            local distance = (killerRoot.Position - myRoot.Position).Magnitude
+            local detectRange = GetTotalDetectionRange(killer)
+            
+            if distance <= detectRange and HasTargetAnimation(killer) and IsTargetingMe(killer) then
+                table.insert(killers, {
+                    killer = killer,
+                    dangerScore = distance / (killerRoot.Velocity.Magnitude + 1)
+                })
+            end
+        end
+    end
+    
+    table.sort(killers, function(a, b)
+        return a.dangerScore < b.dangerScore
+    end)
+    
+    return killers
+end
+
+local function GetAdjustedCooldown()
+    if not LocalPlayer.Character then return config.BlockCooldown end
+    local rootPart = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+    if not rootPart then return config.BlockCooldown end
+    
+    return rootPart.Velocity.Magnitude > config.SpeedThreshold 
+        and config.BlockCooldown * 0.9 
+        or config.BlockCooldown
+end
+
+local function PerformBlock()
+    local now = os.clock()
+    if now - lastBlockTime >= GetAdjustedCooldown() then
+        RemoteEvent:FireServer("UseActorAbility", "Block")
+        lastBlockTime = now
+        
+        if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+            local moveSpeed = LocalPlayer.Character.HumanoidRootPart.Velocity.Magnitude
+            if moveSpeed > config.SpeedThreshold then
+                lastBlockTime = lastBlockTime + 0.03 * (moveSpeed / config.SpeedThreshold)
+            end
+        end
+    end
+end
+
+local function CombatLoop()
+    local killers = GetThreateningKillers()
+    if #killers > 0 then
+        PerformBlock()
+    end
+end
+
+LocalPlayer.CharacterAdded:Connect(function()
+    if config.Enabled and combatConnection then
+        combatConnection:Disconnect()
+        combatConnection = RunService.Stepped:Connect(CombatLoop)
+    end
+end)
