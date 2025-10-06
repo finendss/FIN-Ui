@@ -1926,9 +1926,8 @@ end
     })
 
     Tab7:Toggle({
-        Title = "访客自动格挡",
-        Desc = "动画",
-        Locked = false,
+        Title = "访客自动格挡开关",
+        Default = true,
         Callback = function(enabled)
         config.Enabled = enabled
         if enabled then
