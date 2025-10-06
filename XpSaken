@@ -1912,8 +1912,8 @@ local function CombatLoop()
     end
 end
 
-    Tab7:Slider({
-        Title = "格挡距离",
+    local Slider = Tab7:Slider({
+        Title = "格挡距离调节",
         Value = {
             Min = 5,
             Max = 35,
@@ -1925,9 +1925,10 @@ end
         end
     })
 
-    Tab7:Toggle({
-        Title = "访客自动格挡开关",
-        Default = true,
+    local Toggle = Tab7:Toggle({
+        Title = "自动格挡开关",
+        Desc = "动画",
+        Locked = false,
         Callback = function(enabled)
         config.Enabled = enabled
         if enabled then
