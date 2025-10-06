@@ -1912,7 +1912,7 @@ local function CombatLoop()
     end
 end
 
-    local Slider = Tab7:Slider({
+    local Slider3 = Tab7:Slider({
         Title = "格挡距离调节",
         Value = {
             Min = 5,
