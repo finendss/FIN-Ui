@@ -1749,7 +1749,7 @@ end
         end
     })
 
-    Tab7:Button({
+    Tab7:Toggle({
         Title = "访客自动格挡",
         Desc = "动画",
         Locked = false,
