@@ -5,8 +5,8 @@ local TextChatService = game:GetService("TextChatService")
 local Players = game:GetService("Players")
 local Lighting = game:GetService("Lighting")
 
--- 初始化环境变量
-_env = {
+-- 修复：使用local声明环境变量
+local _env = {
     SpeedBoost = false,
     SpeedBoostValue = 1,
     NoStun = false,
@@ -18,12 +18,21 @@ _env = {
 
 -- 体力系统设置
 local StaminaSettings = {
-    MaxStamina = 100,      -- 最大体力值
-    StaminaGain = 25,      -- 体力恢复速度
-    StaminaLoss = 10,      -- 体力消耗速度
-    SprintSpeed = 28,      -- 奔跑速度
-    InfiniteGain = 9999    -- 无限体力恢复速度
+    MaxStamina = 100,
+    StaminaGain = 25,
+    StaminaLoss = 10,
+    SprintSpeed = 28,
+    InfiniteGain = 9999
 }
+
+-- 修复：添加安全检查的executor识别
+local function getExecutorName()
+    if type(identifyexecutor) == "function" then
+        return identifyexecutor()
+    else
+        return "未知"
+    end
+end
 
 WindUI:Popup({
     Title = "欢迎使用FinSaken",
@@ -31,18 +40,18 @@ WindUI:Popup({
     Content = "尊敬的：" .. game.Players.LocalPlayer.Name,
     Buttons = {
         {
-            Title = "启动XP KFI",
+            Title = "启动FinSaken",
             Icon = "arrow-right",
             Variant = "Primary",
             Callback = function()
-                print("启动XP")
-                -- 创建主窗口
+                print("启动FINFIN")
                 createMainWindow()
             end
         }
     }
 })
 
+-- 修复：UI元素位置调整避免重叠
 local UserGui = Instance.new("ScreenGui", game.CoreGui)
 local UICorner = Instance.new("UICorner")
 local BackgroundRect = Instance.new("Frame", UserGui)
@@ -82,15 +91,15 @@ RectGradient.Rotation = 10
 RectGradient.Parent = BackgroundRect
 
 UserLabel.Name = "UserLabel"
-UserLabel.BackgroundTransparency = 1 -- 背景透明度
-UserLabel.Position = UDim2.new(0.7, 0, 0.02, 0)
+UserLabel.BackgroundTransparency = 1
+UserLabel.Position = UDim2.new(0.7, 0, 0.03, 0)  -- 调整位置避免重叠
 UserLabel.Size = UDim2.new(0, 220, 0, 70)
 UserLabel.Font = Enum.Font.GothamSemibold
 UserLabel.Text = "FinSaken 用户：" .. game.Players.LocalPlayer.Name
 UserLabel.TextColor3 = Color3.new(1, 1, 1)
 UserLabel.TextTransparency = 0
 UserLabel.TextScaled = false
-UserLabel.TextSize = 16 --字体大小
+UserLabel.TextSize = 16
 UserLabel.TextWrapped = true
 UserLabel.Visible = true
 UserLabel.ZIndex = 2
@@ -157,9 +166,17 @@ function createMainWindow()
     local hum = Character:WaitForChild("HumanoidRootPart")
     local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 
-    -- 声明所有线程控制变量
-    local teleportMedkitThread, teleportColaThread, medkitThread, colaThread
-    local autoTeleportMedkitEnabled, autoTeleportColaEnabled, autoMedkitEnabled, autoColaEnabled
+    -- 修复：声明所有线程控制变量
+    local teleportThreads = {
+        medkit = nil,
+        cola = nil
+    }
+    local autoEnabled = {
+        teleportMedkit = false,
+        teleportCola = false,
+        medkit = false,
+        cola = false
+    }
     
     local Window = WindUI:CreateWindow({
         Title = "FinSaken / FIN Hub",
@@ -181,7 +198,7 @@ function createMainWindow()
         Background = "rbxassetid://73416826039813"
     })
     
-        local TimeTag = Window:Tag({
+    local TimeTag = Window:Tag({
         Title = "00:00",
         Color = Color3.fromHex("#30ff6a")
     })
@@ -209,7 +226,7 @@ function createMainWindow()
         Color = Color3.fromHex("#315dff")
     })
     
-    local TimeTag = Window:Tag({
+    local UpdateTag = Window:Tag({
         Title = "更新中",
         Color = Color3.fromHex("#000000")
     })
@@ -229,14 +246,14 @@ function createMainWindow()
     -- 添加彩虹边框效果
     Window:EditOpenButton({
         StrokeColor = ColorSequence.new({
-            ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 0, 0)),     -- 红色
-            ColorSequenceKeypoint.new(0.2, Color3.fromRGB(255, 165, 0)), -- 橙色
-            ColorSequenceKeypoint.new(0.4, Color3.fromRGB(255, 255, 0)), -- 黄色
-            ColorSequenceKeypoint.new(0.6, Color3.fromRGB(0, 255, 0)),   -- 绿色
-            ColorSequenceKeypoint.new(0.8, Color3.fromRGB(0, 0, 255)),   -- 蓝色
-            ColorSequenceKeypoint.new(1, Color3.fromRGB(128, 0, 128))    -- 紫色
+            ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 0, 0)),
+            ColorSequenceKeypoint.new(0.2, Color3.fromRGB(255, 165, 0)),
+            ColorSequenceKeypoint.new(0.4, Color3.fromRGB(255, 255, 0)),
+            ColorSequenceKeypoint.new(0.6, Color3.fromRGB(0, 255, 0)),
+            ColorSequenceKeypoint.new(0.8, Color3.fromRGB(0, 0, 255)),
+            ColorSequenceKeypoint.new(1, Color3.fromRGB(128, 0, 128))
         }),
-        StrokeThickness = 3,  -- 增加边框厚度
+        StrokeThickness = 3,
     })
 
     local MainTab = Window:Tab({
@@ -245,20 +262,18 @@ function createMainWindow()
         Locked = false,
     })
 
-MainTab:Paragraph({
+    MainTab:Paragraph({
         Title = "作者：FIN",
         Desc = "脚本可能是暂时免费的",
-    
+    })
     MainTab:Paragraph({
         Title = "感谢您的支持",
         Desc = "当前服务器ID: " .. game.PlaceId,
-    })
-    
+    }) 
     MainTab:Paragraph({
         Title = "您的注入器",
-        Desc = ": " .. identifyexecutor(),
+        Desc = ": " .. getExecutorName(),
     })
-    
     MainTab:Paragraph({
         Title = "欢迎使用 FinSaken",
         Desc = "加入我的QQ群获取最新消息 951740588",
@@ -289,30 +304,48 @@ MainTab:Paragraph({
     
     -- 防眩晕功能
     local function setupNoStun()
-        LocalPlayer.Character.Humanoid:GetPropertyChangedSignal("WalkSpeed"):Connect(function()
-            if _env.NoStun and LocalPlayer.Character.Humanoid.WalkSpeed < 16 then
-                LocalPlayer.Character.Humanoid.WalkSpeed = 16
+        if not LocalPlayer.Character then return end
+        
+        local humanoid = LocalPlayer.Character:FindFirstChild("Humanoid")
+        if not humanoid then return end
+        
+        humanoid:GetPropertyChangedSignal("WalkSpeed"):Connect(function()
+            if _env.NoStun and humanoid.WalkSpeed < 16 then
+                humanoid.WalkSpeed = 16
             end
         end)
-        LocalPlayer.CharacterAdded:Connect(function()
-            LocalPlayer.Character.Humanoid:GetPropertyChangedSignal("WalkSpeed"):Connect(function()
-                if _env.NoStun and LocalPlayer.Character.Humanoid.WalkSpeed < 16 then
-                    LocalPlayer.Character.Humanoid.WalkSpeed = 16
+        
+        LocalPlayer.CharacterAdded:Connect(function(character)
+            character:WaitForChild("Humanoid")
+            character.Humanoid:GetPropertyChangedSignal("WalkSpeed"):Connect(function()
+                if _env.NoStun and character.Humanoid.WalkSpeed < 16 then
+                    character.Humanoid.WalkSpeed = 16
                 end
             end)
         end)
     end
     
     -- 速度提升功能
+    local speedBoostThread = nil
     local function setupSpeedBoost()
+        if speedBoostThread then
+            task.cancel(speedBoostThread)
+            speedBoostThread = nil
+        end
+        
         if _env.SpeedBoost then
-            while _env.SpeedBoost and task.wait() do
-                if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-                    LocalPlayer.Character.HumanoidRootPart.CFrame = LocalPlayer.Character.HumanoidRootPart.CFrame +
-                    LocalPlayer.Character.Humanoid.MoveDirection * _env.SpeedBoostValue
-                    LocalPlayer.Character.HumanoidRootPart.CanCollide = true
+            speedBoostThread = task.spawn(function()
+                while _env.SpeedBoost and task.wait() do
+                    if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                        local humanoid = LocalPlayer.Character:FindFirstChild("Humanoid")
+                        if humanoid and humanoid.MoveDirection.Magnitude > 0 then
+                            LocalPlayer.Character.HumanoidRootPart.CFrame = LocalPlayer.Character.HumanoidRootPart.CFrame +
+                            humanoid.MoveDirection * _env.SpeedBoostValue
+                            LocalPlayer.Character.HumanoidRootPart.CanCollide = true
+                        end
+                    end
                 end
-            end
+            end)
         end
     end
     
@@ -335,9 +368,7 @@ MainTab:Paragraph({
         Locked = false,
         Callback = function(v)
             _env.SpeedBoost = v
-            if v then
-                task.spawn(setupSpeedBoost)
-            end
+            setupSpeedBoost()
         end
     })
 
@@ -365,31 +396,42 @@ MainTab:Paragraph({
     })
     
     -- 高亮和光照设置
+    local lightingConnection = nil
     local function setupLighting()
-        if not Lighting:GetAttribute("FogStart") then
-            Lighting:SetAttribute("FogStart", Lighting.FogStart)
+        if _env.NoFog then
+            if not Lighting:GetAttribute("OriginalFogStart") then
+                Lighting:SetAttribute("OriginalFogStart", Lighting.FogStart)
+                Lighting:SetAttribute("OriginalFogEnd", Lighting.FogEnd)
+            end
+            Lighting.FogStart = 0
+            Lighting.FogEnd = math.huge
+        else
+            if Lighting:GetAttribute("OriginalFogStart") then
+                Lighting.FogStart = Lighting:GetAttribute("OriginalFogStart")
+                Lighting.FogEnd = Lighting:GetAttribute("OriginalFogEnd")
+            end
         end
-        if not Lighting:GetAttribute("FogEnd") then
-            Lighting:SetAttribute("FogEnd", Lighting.FogEnd)
-        end
-
-        Lighting.FogStart = _env.NoFog and 0 or Lighting:GetAttribute("FogStart")
-        Lighting.FogEnd = _env.NoFog and math.huge or Lighting:GetAttribute("FogEnd")
 
         local fog = Lighting:FindFirstChildOfClass("Atmosphere")
         if fog then
-            if not fog:GetAttribute("Density") then
-                fog:SetAttribute("Density", fog.Density)
+            if _env.NoFog then
+                if not fog:GetAttribute("OriginalDensity") then
+                    fog:SetAttribute("OriginalDensity", fog.Density)
+                end
+                fog.Density = 0
+            else
+                if fog:GetAttribute("OriginalDensity") then
+                    fog.Density = fog:GetAttribute("OriginalDensity")
+                end
             end
-            fog.Density = _env.NoFog and 0 or fog:GetAttribute("Density")
         end
 
         if _env.Fullbright then
-            Lighting.OutdoorAmbient = Color3.new(1,1,1)
-            Lighting.Brightness = _env.Brightness or 0
+            Lighting.Ambient = Color3.new(1, 1, 1)
+            Lighting.Brightness = _env.Brightness
             Lighting.GlobalShadows = not _env.GlobalShadows
         else
-            Lighting.OutdoorAmbient = Color3.fromRGB(55,55,55)
+            Lighting.Ambient = Color3.fromRGB(55, 55, 55)
             Lighting.Brightness = 0
             Lighting.GlobalShadows = true
         end
@@ -401,8 +443,13 @@ MainTab:Paragraph({
         Locked = false,
         Callback = function(v)
             _env.Fullbright = v
+            if lightingConnection then
+                lightingConnection:Disconnect()
+                lightingConnection = nil
+            end
+            
             if v then
-                RunService.RenderStepped:Connect(setupLighting)
+                lightingConnection = RunService.RenderStepped:Connect(setupLighting)
             else
                 setupLighting()
             end
@@ -450,16 +497,21 @@ MainTab:Paragraph({
         Locked = false,
     })
 
-    -- 实时更新体力设置
+    -- 修复：实时更新体力设置，避免频繁require
+    local staminaUpdateThread = nil
     task.spawn(function()
+        local lastModule = nil
         while true do
             local m = GetSprintingModule()
-            if m then
+            if m and m ~= lastModule then
                 for key, value in pairs(StaminaSettings) do
-                    m[key] = value
+                    if m[key] ~= nil then
+                        m[key] = value
+                    end
                 end
+                lastModule = m
             end
-            task.wait(0.5)
+            task.wait(1)
         end
     end)
 
@@ -519,8 +571,8 @@ MainTab:Paragraph({
     Tab2:Slider({
         Title = "体力大小",
         Value = {
-            Min = 100,
-            Max = 1000,
+            Min = 0,
+            Max = 99999,
             Default = 100,
         },
         Increment = 1,
@@ -580,17 +632,20 @@ MainTab:Paragraph({
         Desc = "FIN",
         Locked = false,
         Callback = function(state)
-        autoTeleportMedkitEnabled = state
+        autoEnabled.teleportMedkit = state
         
-        if autoTeleportMedkitEnabled then
-            teleportMedkitThread = task.spawn(function()
-                while autoTeleportMedkitEnabled and task.wait(0.5) do
-                  
+        if teleportThreads.medkit then
+            task.cancel(teleportThreads.medkit)
+            teleportThreads.medkit = nil
+        end
+        
+        if autoEnabled.teleportMedkit then
+            teleportThreads.medkit = task.spawn(function()
+                while autoEnabled.teleportMedkit and task.wait(0.5) do
                     local character = game.Players.LocalPlayer.Character
                     if character and character:FindFirstChild("HumanoidRootPart") then
                         local humanoidRootPart = character.HumanoidRootPart
                         
-                      
                         local medkit = workspace:FindFirstChild("Map", true)
                         if medkit then
                             medkit = medkit:FindFirstChild("Ingame", true)
@@ -599,10 +654,8 @@ MainTab:Paragraph({
                                 if medkit then
                                     local itemRoot = medkit:FindFirstChild("ItemRoot", true)
                                     if itemRoot then
-                                       
                                         itemRoot.CFrame = humanoidRootPart.CFrame + humanoidRootPart.CFrame.LookVector * 3
                                         
-                                       
                                         local prompt = itemRoot:FindFirstChild("ProximityPrompt", true)
                                         if prompt then
                                             fireproximityprompt(prompt)
@@ -614,9 +667,6 @@ MainTab:Paragraph({
                     end
                 end
             end)
-        elseif teleportMedkitThread then
-            task.cancel(teleportMedkitThread)
-            teleportMedkitThread = nil
         end
     end
 })
@@ -626,17 +676,20 @@ MainTab:Paragraph({
         Desc = "FIN",
         Locked = false,
         Callback = function(state)
-        autoTeleportColaEnabled = state
+        autoEnabled.teleportCola = state
         
-        if autoTeleportColaEnabled then
-            teleportColaThread = task.spawn(function()
-                while autoTeleportColaEnabled and task.wait(0.5) do
-                    -- 获取玩家角色
+        if teleportThreads.cola then
+            task.cancel(teleportThreads.cola)
+            teleportThreads.cola = nil
+        end
+        
+        if autoEnabled.teleportCola then
+            teleportThreads.cola = task.spawn(function()
+                while autoEnabled.teleportCola and task.wait(0.5) do
                     local character = game.Players.LocalPlayer.Character
                     if character and character:FindFirstChild("HumanoidRootPart") then
                         local humanoidRootPart = character.HumanoidRootPart
                         
-                        -- 查找可乐
                         local cola = workspace:FindFirstChild("Map", true)
                         if cola then
                             cola = cola:FindFirstChild("Ingame", true)
@@ -645,10 +698,8 @@ MainTab:Paragraph({
                                 if cola then
                                     local itemRoot = cola:FindFirstChild("ItemRoot", true)
                                     if itemRoot then
-                                        -- 将可乐传送到玩家前方3个单位的位置
                                         itemRoot.CFrame = humanoidRootPart.CFrame + humanoidRootPart.CFrame.LookVector * 3
                                         
-                                        -- 查找互动提示并触发
                                         local prompt = itemRoot:FindFirstChild("ProximityPrompt", true)
                                         if prompt then
                                             fireproximityprompt(prompt)
@@ -660,9 +711,6 @@ MainTab:Paragraph({
                     end
                 end
             end)
-        elseif teleportColaThread then
-            task.cancel(teleportColaThread)
-            teleportColaThread = nil
         end
     end
 })
@@ -672,11 +720,11 @@ MainTab:Paragraph({
         Desc = "不关上无法丢弃💀",
         Locked = false,
         Callback = function(state)
-        autoMedkitEnabled = state
+        autoEnabled.medkit = state
         
-        if autoMedkitEnabled then
-            medkitThread = task.spawn(function()
-                while autoMedkitEnabled and task.wait(0.5) do
+        if autoEnabled.medkit then
+            task.spawn(function()
+                while autoEnabled.medkit and task.wait(0.5) do
                     local medkit = workspace:FindFirstChild("Map", true)
                     if medkit then
                         medkit = medkit:FindFirstChild("Ingame", true)
@@ -695,9 +743,6 @@ MainTab:Paragraph({
                     end
                 end
             end)
-        elseif medkitThread then
-            task.cancel(medkitThread)
-            medkitThread = nil
         end
     end
 })
@@ -707,23 +752,22 @@ MainTab:Paragraph({
         Desc = "不关上无法丢弃💀",
         Locked = false,
         Callback = function(state)
-        autoColaEnabled = state
+        autoEnabled.cola = state
         
-        if autoColaEnabled then
-            colaThread = task.spawn(function()
-                while autoColaEnabled and task.wait(0.5) do
+        if autoEnabled.cola then
+            task.spawn(function()
+                while autoEnabled.cola and task.wait(0.5) do
                     local cola = workspace:FindFirstChild("Map", true)
+                    if cola then
+                        cola = cola:FindFirstChild("Ingame", true)
                         if cola then
-                            cola = cola:FindFirstChild("Ingame", true)
+                            cola = cola:FindFirstChild("BloxyCola", true)
                             if cola then
-                                cola = cola:FindFirstChild("BloxyCola", true)
-                                if cola then
-                                    local itemRoot = cola:FindFirstChild("ItemRoot", true)
-                                    if itemRoot then
-                                        local prompt = itemRoot:FindFirstChild("ProximityPrompt", true)
-                                        if prompt then
-                                            fireproximityprompt(prompt)
-                                        end
+                                local itemRoot = cola:FindFirstChild("ItemRoot", true)
+                                if itemRoot then
+                                    local prompt = itemRoot:FindFirstChild("ProximityPrompt", true)
+                                    if prompt then
+                                        fireproximityprompt(prompt)
                                     end
                                 end
                             end
@@ -731,9 +775,6 @@ MainTab:Paragraph({
                     end
                 end
             end)
-        elseif colaThread then
-            task.cancel(colaThread)
-            colaThread = nil
         end
     end
 })
@@ -793,13 +834,25 @@ MainTab:Paragraph({
             local spe = workspace.Players.Spectating
             local ing = workspace.Map.Ingame
             print("By Syndrome")
+            
+            -- 修复：添加安全检查的绘图函数
             local function survivoresp(char)
+                if not char or not char:FindFirstChild("Head") or not char:FindFirstChild("Humanoid") then
+                    return
+                end
+                
+                if char:FindFirstChild("SurvivorESP") then
+                    return
+                end
+                
                 local billboard = Instance.new("BillboardGui")
+                billboard.Name = "SurvivorESP"
                 billboard.Size = UDim2.new(2, 0, 0.5, 0)
                 billboard.StudsOffset = Vector3.new(0, 1.25, 0)
                 billboard.Adornee = char.Head
                 billboard.Parent = char.Head
                 billboard.AlwaysOnTop = true
+                
                 local textLabel = Instance.new("TextLabel")
                 textLabel.Size = UDim2.new(1, 0, 1, 0)
                 textLabel.Position = UDim2.new(0, 1, 0, 1)
@@ -809,12 +862,14 @@ MainTab:Paragraph({
                 textLabel.TextColor3 = Color3.fromRGB(255, 100, 28)
                 textLabel.Font = Enum.Font.Arcade
                 textLabel.Parent = billboard
+                
                 local charnamebill = Instance.new("BillboardGui")
                 charnamebill.Size = UDim2.new(9, 0, 1, 0)
                 charnamebill.StudsOffset = Vector3.new(0, 2, 0)
                 charnamebill.Adornee = char.Head
                 charnamebill.Parent = char.Head
                 charnamebill.AlwaysOnTop = true
+                
                 local charnametext = Instance.new("TextLabel")
                 charnametext.Size = UDim2.new(1, 0, 1, 0)
                 charnametext.Position = UDim2.new(0, 1, 0, 1)
@@ -824,6 +879,7 @@ MainTab:Paragraph({
                 charnametext.TextColor3 = Color3.fromRGB(255, 100, 28)
                 charnametext.Font = Enum.Font.Arcade
                 charnametext.Parent = charnamebill
+                
                 local highlight = Instance.new("Highlight")
                 highlight.Archivable = true
                 highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
@@ -833,24 +889,40 @@ MainTab:Paragraph({
                 highlight.FillTransparency = 0.9
                 highlight.OutlineTransparency = 0
                 highlight.Parent = char
+                
                 local temp = char:FindFirstChild("Humanoid").HealthChanged:Connect(function()
-                    textLabel.Text = "血量: "..char:FindFirstChild("Humanoid").Health.."/"..char:FindFirstChild("Humanoid").MaxHealth
+                    if char:FindFirstChild("Humanoid") then
+                        textLabel.Text = "血量: "..char:FindFirstChild("Humanoid").Health.."/"..char:FindFirstChild("Humanoid").MaxHealth
+                    end
                 end)
+                
                 char:FindFirstChild("Humanoid").Died:Connect(function()
                     temp:Disconnect()
                     textLabel.Text = ""
                     charnametext.Text = ""
                     highlight.OutlineTransparency = 1
                 end)
+                
                 return textLabel
             end
+            
             local function killeresp(char)
+                if not char or not char:FindFirstChild("Head") or not char:FindFirstChild("Humanoid") then
+                    return
+                end
+                
+                if char:FindFirstChild("KillerESP") then
+                    return
+                end
+                
                 local billboard = Instance.new("BillboardGui")
+                billboard.Name = "KillerESP"
                 billboard.Size = UDim2.new(2, 0, 0.5, 0)
                 billboard.StudsOffset = Vector3.new(0, 1.25, 0)
                 billboard.Adornee = char.Head
                 billboard.Parent = char.Head
                 billboard.AlwaysOnTop = true
+                
                 local textLabel = Instance.new("TextLabel")
                 textLabel.Size = UDim2.new(1, 0, 1, 0)
                 textLabel.Position = UDim2.new(0, 1, 0, 1)
@@ -860,12 +932,14 @@ MainTab:Paragraph({
                 textLabel.TextColor3 = Color3.fromRGB(204, 0, 0)
                 textLabel.Font = Enum.Font.Arcade
                 textLabel.Parent = billboard
+                
                 local charnamebill = Instance.new("BillboardGui")
                 charnamebill.Size = UDim2.new(9, 0, 1, 0)
                 charnamebill.StudsOffset = Vector3.new(0, 2, 0)
                 charnamebill.Adornee = char.Head
                 charnamebill.Parent = char.Head
                 charnamebill.AlwaysOnTop = true
+                
                 local charnametext = Instance.new("TextLabel")
                 charnametext.Size = UDim2.new(1, 0, 1, 0)
                 charnametext.Position = UDim2.new(0, 1, 0, 1)
@@ -875,6 +949,7 @@ MainTab:Paragraph({
                 charnametext.TextColor3 = Color3.fromRGB(204, 0, 0)
                 charnametext.Font = Enum.Font.Arcade
                 charnametext.Parent = charnamebill
+                
                 local highlight = Instance.new("Highlight")
                 highlight.Archivable = true
                 highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
@@ -884,24 +959,40 @@ MainTab:Paragraph({
                 highlight.FillTransparency = 0.9
                 highlight.OutlineTransparency = 0
                 highlight.Parent = char
+                
                 local temp = char:FindFirstChild("Humanoid").HealthChanged:Connect(function()
-                    textLabel.Text = "血量: "..char:FindFirstChild("Humanoid").Health.."/"..char:FindFirstChild("Humanoid").MaxHealth
+                    if char:FindFirstChild("Humanoid") then
+                        textLabel.Text = "血量: "..char:FindFirstChild("Humanoid").Health.."/"..char:FindFirstChild("Humanoid").MaxHealth
+                    end
                 end)
+                
                 char:FindFirstChild("Humanoid").Died:Connect(function()
                     temp:Disconnect()
                     textLabel.Text = ""
                     charnametext.Text = ""
                     highlight.OutlineTransparency = 1
                 end)
+                
                 return textLabel
             end
+            
             local function specesp(char)
+                if not char or not char:FindFirstChild("Head") or not char:FindFirstChild("Humanoid") then
+                    return
+                end
+                
+                if char:FindFirstChild("SpectatorESP") then
+                    return
+                end
+                
                 local billboard = Instance.new("BillboardGui")
+                billboard.Name = "SpectatorESP"
                 billboard.Size = UDim2.new(2, 0, 0.5, 0)
                 billboard.StudsOffset = Vector3.new(0, 1.25, 0)
                 billboard.Adornee = char.Head
                 billboard.Parent = char.Head
                 billboard.AlwaysOnTop = true
+                
                 local textLabel = Instance.new("TextLabel")
                 textLabel.Size = UDim2.new(1, 0, 1, 0)
                 textLabel.Position = UDim2.new(0, 1, 0, 1)
@@ -911,12 +1002,14 @@ MainTab:Paragraph({
                 textLabel.TextColor3 = Color3.fromRGB(117, 117, 117)
                 textLabel.Font = Enum.Font.Arcade
                 textLabel.Parent = billboard
+                
                 local charnamebill = Instance.new("BillboardGui")
                 charnamebill.Size = UDim2.new(9, 0, 1, 0)
                 charnamebill.StudsOffset = Vector3.new(0, 2, 0)
                 charnamebill.Adornee = char.Head
                 charnamebill.Parent = char.Head
                 charnamebill.AlwaysOnTop = true
+                
                 local charnametext = Instance.new("TextLabel")
                 charnametext.Size = UDim2.new(1, 0, 1, 0)
                 charnametext.Position = UDim2.new(0, 1, 0, 1)
@@ -926,6 +1019,7 @@ MainTab:Paragraph({
                 charnametext.TextColor3 = Color3.fromRGB(117, 117, 117)
                 charnametext.Font = Enum.Font.Arcade
                 charnametext.Parent = charnamebill
+                
                 local highlight = Instance.new("Highlight")
                 highlight.Archivable = true
                 highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
@@ -935,26 +1029,42 @@ MainTab:Paragraph({
                 highlight.FillTransparency = 0.9
                 highlight.OutlineTransparency = 0
                 highlight.Parent = char
+                
                 local temp = char:FindFirstChild("Humanoid").HealthChanged:Connect(function()
-                    textLabel.Text = "血量: "..char:FindFirstChild("Humanoid").Health.."/"..char:FindFirstChild("Humanoid").MaxHealth
+                    if char:FindFirstChild("Humanoid") then
+                        textLabel.Text = "血量: "..char:FindFirstChild("Humanoid").Health.."/"..char:FindFirstChild("Humanoid").MaxHealth
+                    end
                 end)
+                
                 char:FindFirstChild("Humanoid").Died:Connect(function()
                     temp:Disconnect()
                     textLabel.Text = ""
                     charnametext.Text = ""
                     highlight.OutlineTransparency = 1
                 end)
+                
                 return textLabel
             end
+            
             local function genesp(p)
+                if not p or not p:FindFirstChild("Main") then
+                    return
+                end
+                
+                if p:FindFirstChild("GeneratorESP") then
+                    return
+                end
+                
                 local billboard = Instance.new("BillboardGui")
+                billboard.Name = "GeneratorESP"
                 billboard.Size = UDim2.new(2, 0, 0.5, 0)
                 billboard.StudsOffset = Vector3.new(0, 1.25, 0)
                 billboard.Adornee = p.Main
                 billboard.Parent = p.Main
                 billboard.AlwaysOnTop = true
+                
                 local textLabel = Instance.new("TextLabel")
-                textLabel.Size = UDim2.new(1, 0, 1, 0)
+                textLabel.Size = UDim2.new(1, 0, 0.5, 0)
                 textLabel.Position = UDim2.new(0, 1, 0, 1)
                 textLabel.BackgroundTransparency = 1
                 textLabel.TextScaled = true
@@ -962,12 +1072,14 @@ MainTab:Paragraph({
                 textLabel.TextColor3 = Color3.fromRGB(255, 206, 28)
                 textLabel.Font = Enum.Font.Arcade
                 textLabel.Parent = billboard
+                
                 local gennamebill = Instance.new("BillboardGui")
                 gennamebill.Size = UDim2.new(9, 0, 1, 0)
                 gennamebill.StudsOffset = Vector3.new(0, 2, 0)
                 gennamebill.Adornee = p.Main
                 gennamebill.Parent = p.Main
                 gennamebill.AlwaysOnTop = true
+                
                 local gennametext = Instance.new("TextLabel")
                 gennametext.Size = UDim2.new(1, 0, 1, 0)
                 gennametext.Position = UDim2.new(0, 1, 0, 1)
@@ -977,6 +1089,7 @@ MainTab:Paragraph({
                 gennametext.TextColor3 = Color3.fromRGB(255, 206, 28)
                 gennametext.Font = Enum.Font.Arcade
                 gennametext.Parent = gennamebill
+                
                 local highlight = Instance.new("Highlight")
                 highlight.Archivable = true
                 highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
@@ -986,31 +1099,48 @@ MainTab:Paragraph({
                 highlight.FillTransparency = 0.9
                 highlight.OutlineTransparency = 0
                 highlight.Parent = p
+                
                 local temp = RunService.Heartbeat:Connect(function()
-                    if p:FindFirstChild("Progress").Value >= 99 then
+                    if p:FindFirstChild("Progress") and p.Progress.Value >= 99 then
                         gennametext.Text = ""
                         highlight:Destroy()
                         textLabel.Text = ""
                     else
                         gennametext.Text = "Generator"
-                        textLabel.Text = "修机进度: "..p.Progress.Value.."%"
+                        if p:FindFirstChild("Progress") then
+                            textLabel.Text = "修机进度: "..p.Progress.Value.."%"
+                        end
                     end
                 end)
-                if p:FindFirstChild("Progress").Value >= 99 then
+                
+                if p:FindFirstChild("Progress") and p.Progress.Value >= 99 then
                     temp:Disconnect()
                 end
+                
                 p.Destroying:Connect(function()
                     temp:Disconnect()
                 end)
+                
                 return textLabel
             end
+            
             local function itemesp(p)
+                if not p or not p:FindFirstChild("ItemRoot") then
+                    return
+                end
+                
+                if p:FindFirstChild("ItemESP") then
+                    return
+                end
+                
                 local billboard = Instance.new("BillboardGui")
+                billboard.Name = "ItemESP"
                 billboard.Size = UDim2.new(2, 0, 0.5, 0)
                 billboard.StudsOffset = Vector3.new(0, 1.25, 0)
                 billboard.Adornee = p:FindFirstChild("ItemRoot")
                 billboard.Parent = p:FindFirstChild("ItemRoot")
                 billboard.AlwaysOnTop = true
+                
                 local textLabel = Instance.new("TextLabel")
                 textLabel.Size = UDim2.new(1, 0, 1, 0)
                 textLabel.Position = UDim2.new(0, 1, 0, 1)
@@ -1020,6 +1150,7 @@ MainTab:Paragraph({
                 textLabel.TextColor3 = Color3.fromRGB(32, 54, 153)
                 textLabel.Font = Enum.Font.Arcade
                 textLabel.Parent = billboard
+                
                 local highlight = Instance.new("Highlight")
                 highlight.Archivable = true
                 highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
@@ -1029,168 +1160,207 @@ MainTab:Paragraph({
                 highlight.FillTransparency = 0.9
                 highlight.OutlineTransparency = 0
                 highlight.Parent = p
+                
                 return textLabel
             end
-            sur.DescendantAdded:Connect(function(v)
-                if v:IsA("Model") and v:FindFirstChild("Humanoid") then
-                    repeat task.wait() until v:FindFirstChild("Humanoid")
-                    survivoresp(v)
-                end
-            end)
-            for _,v in pairs(sur:GetDescendants()) do
-                if v:IsA("Model") and v:FindFirstChild("Humanoid") then
-                    repeat task.wait() until v:FindFirstChild("Humanoid")
-                    survivoresp(v)
-                end
-            end
-            kil.DescendantAdded:Connect(function(v)
-                if v:IsA("Model") and v:FindFirstChild("Humanoid")  then
-                    repeat task.wait() until v:FindFirstChild("Humanoid")
-                    killeresp(v)
-                end
-            end)
-            for _,v in pairs(kil:GetDescendants()) do
-                if v:IsA("Model") and v:FindFirstChild("Humanoid") then
-                    repeat task.wait() until v:FindFirstChild("Humanoid")
-                    killeresp(v)
+            
+            if sur then
+                sur.DescendantAdded:Connect(function(v)
+                    if v:IsA("Model") and v:FindFirstChild("Humanoid") then
+                        task.wait()
+                        survivoresp(v)
+                    end
+                end)
+                
+                for _,v in pairs(sur:GetDescendants()) do
+                    if v:IsA("Model") and v:FindFirstChild("Humanoid") then
+                        task.wait()
+                        survivoresp(v)
+                    end
                 end
             end
-            spe.DescendantAdded:Connect(function(v)
-                if v:IsA("Model") and v:FindFirstChild("Humanoid") then
-                    repeat task.wait() until v:FindFirstChild("Humanoid")
-                    specesp(v)
-                end
-            end)
-            for _,v in pairs(spe:GetDescendants()) do
-                if v:IsA("Model") and v:FindFirstChild("Humanoid") then
-                    repeat task.wait() until v:FindFirstChild("Humanoid")
-                    specesp(v)
-                end
-            end
-            ing.DescendantAdded:Connect(function(v)
-                if v:IsA("Model") and v:FindFirstChild("Main")  and v.Name == "Generator" then
-                    repeat task.wait() until v.Name == "Generator"
-                    genesp(v)
-                end
-            end)
-            for _,v in pairs(ing:GetDescendants()) do
-                if v:IsA("Model") and v:FindFirstChild("Main") and v.Name == "Generator" then
-                    repeat task.wait() until v.Name == "Generator"
-                    genesp(v)
+            
+            if kil then
+                kil.DescendantAdded:Connect(function(v)
+                    if v:IsA("Model") and v:FindFirstChild("Humanoid")  then
+                        task.wait()
+                        killeresp(v)
+                    end
+                end)
+                
+                for _,v in pairs(kil:GetDescendants()) do
+                    if v:IsA("Model") and v:FindFirstChild("Humanoid") then
+                        task.wait()
+                        killeresp(v)
+                    end
                 end
             end
-            ing.DescendantAdded:Connect(function(v)
-                if v:IsA("Tool") then
-                    repeat task.wait() until v:IsA("Tool")
-                    itemesp(v)
+            
+            if spe then
+                spe.DescendantAdded:Connect(function(v)
+                    if v:IsA("Model") and v:FindFirstChild("Humanoid") then
+                        task.wait()
+                        specesp(v)
+                    end
+                end)
+                
+                for _,v in pairs(spe:GetDescendants()) do
+                    if v:IsA("Model") and v:FindFirstChild("Humanoid") then
+                        task.wait()
+                        specesp(v)
+                    end
                 end
-            end)
-            for _,v in pairs(ing:GetDescendants()) do
-                if v:IsA("Tool") then
-                    repeat task.wait() until v:IsA("Tool")
-                    itemesp(v)
+            end
+            
+            if ing then
+                ing.DescendantAdded:Connect(function(v)
+                    if v:IsA("Model") and v:FindFirstChild("Main")  and v.Name == "Generator" then
+                        task.wait()
+                        genesp(v)
+                    end
+                end)
+                
+                for _,v in pairs(ing:GetDescendants()) do
+                    if v:IsA("Model") and v:FindFirstChild("Main") and v.Name == "Generator" then
+                        task.wait()
+                        genesp(v)
+                    end
+                end
+                
+                ing.DescendantAdded:Connect(function(v)
+                    if v:IsA("Tool") then
+                        task.wait()
+                        itemesp(v)
+                    end
+                end)
+                
+                for _,v in pairs(ing:GetDescendants()) do
+                    if v:IsA("Tool") then
+                        task.wait()
+                        itemesp(v)
+                    end
                 end
             end
         end
     })
     
---绘制的功能ok？
-local HighlightSystem = {
-    Enabled = false,
-    Settings = {
-        ShowSurvivors = true,
-        ShowKillers = true,
-        Colors = {
-            Survivor = Color3.fromRGB(0, 255, 255),
-            Killer = Color3.fromRGB(255, 100, 100)
+    -- 高亮系统
+    local HighlightSystem = {
+        Enabled = false,
+        Settings = {
+            ShowSurvivors = true,
+            ShowKillers = true,
+            Colors = {
+                Survivor = Color3.fromRGB(0, 255, 255),
+                Killer = Color3.fromRGB(255, 100, 100)
+            },
+            Transparency = {
+                Fill = 0.9,
+                Outline = 0
+            }
         },
-        Transparency = {
-            Fill = 0.9,
-            Outline = 0
+        Cache = {
+            Highlights = {},
+            Connections = {}
         }
-    },
-    Cache = {
-        Highlights = {},
-        Connections = {}
     }
-}
 
-local function CreateHighlight(char, isKiller)
-    local highlight = Instance.new("Highlight")
-    highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
-    highlight.FillColor = isKiller and HighlightSystem.Settings.Colors.Killer or HighlightSystem.Settings.Colors.Survivor
-    highlight.OutlineColor = highlight.FillColor
-    highlight.FillTransparency = HighlightSystem.Settings.Transparency.Fill
-    highlight.OutlineTransparency = HighlightSystem.Settings.Transparency.Outline
-    highlight.Parent = char
-    
-    local conn = char.Humanoid.HealthChanged:Connect(function()
-        if not char:FindFirstChild("Humanoid") then conn:Disconnect() end
-    end)
-    
-    char.Humanoid.Died:Connect(function()
-        highlight.OutlineTransparency = 1
-        conn:Disconnect()
-    end)
-    
-    return highlight
-end
-
-local function UpdateHighlights()
-    for char, highlight in pairs(HighlightSystem.Cache.Highlights) do
-        if not char.Parent then
-            highlight:Destroy()
-            HighlightSystem.Cache.Highlights[char] = nil
+    local function CreateHighlight(char, isKiller)
+        if not char or not char:FindFirstChild("Humanoid") then
+            return nil
         end
+        
+        local highlight = Instance.new("Highlight")
+        highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+        highlight.FillColor = isKiller and HighlightSystem.Settings.Colors.Killer or HighlightSystem.Settings.Colors.Survivor
+        highlight.OutlineColor = highlight.FillColor
+        highlight.FillTransparency = HighlightSystem.Settings.Transparency.Fill
+        highlight.OutlineTransparency = HighlightSystem.Settings.Transparency.Outline
+        highlight.Parent = char
+        
+        local conn = char.Humanoid.HealthChanged:Connect(function()
+            if not char:FindFirstChild("Humanoid") then 
+                conn:Disconnect() 
+            end
+        end)
+        
+        char.Humanoid.Died:Connect(function()
+            highlight.OutlineTransparency = 1
+            conn:Disconnect()
+        end)
+        
+        return highlight
     end
-    
-    if HighlightSystem.Settings.ShowSurvivors then
-        for _, char in ipairs(workspace.Players.Survivors:GetDescendants()) do
-            if char:IsA("Model") and char:FindFirstChild("Humanoid") then
-                if not HighlightSystem.Cache.Highlights[char] then
-                    HighlightSystem.Cache.Highlights[char] = CreateHighlight(char, false)
+
+    local function UpdateHighlights()
+        for char, highlight in pairs(HighlightSystem.Cache.Highlights) do
+            if not char.Parent then
+                highlight:Destroy()
+                HighlightSystem.Cache.Highlights[char] = nil
+            end
+        end
+        
+        if HighlightSystem.Settings.ShowSurvivors then
+            local survivors = workspace:FindFirstChild("Players")
+            if survivors then
+                survivors = survivors:FindFirstChild("Survivors")
+                if survivors then
+                    for _, char in ipairs(survivors:GetDescendants()) do
+                        if char:IsA("Model") and char:FindFirstChild("Humanoid") then
+                            if not HighlightSystem.Cache.Highlights[char] then
+                                HighlightSystem.Cache.Highlights[char] = CreateHighlight(char, false)
+                            end
+                        end
+                    end
+                end
+            end
+        end
+        
+        if HighlightSystem.Settings.ShowKillers then
+            local killers = workspace:FindFirstChild("Players")
+            if killers then
+                killers = killers:FindFirstChild("Killers")
+                if killers then
+                    for _, char in ipairs(killers:GetDescendants()) do
+                        if char:IsA("Model") and char:FindFirstChild("Humanoid") then
+                            if not HighlightSystem.Cache.Highlights[char] then
+                                HighlightSystem.Cache.Highlights[char] = CreateHighlight(char, true)
+                            end
+                        end
+                    end
                 end
             end
         end
     end
-    
-    if HighlightSystem.Settings.ShowKillers then
-        for _, char in ipairs(workspace.Players.Killers:GetDescendants()) do
-            if char:IsA("Model") and char:FindFirstChild("Humanoid") then
-                if not HighlightSystem.Cache.Highlights[char] then
-                    HighlightSystem.Cache.Highlights[char] = CreateHighlight(char, true)
-                end
-            end
-        end
-    end
-end
     
     local Toggle13 = Tab5:Toggle({
         Title = "绘制角色总开关",
         Desc = "FIN",
         Locked = false,
         Callback = function(state)
-          HighlightSystem.Enabled = state
-        if state then
-            HighlightSystem.Cache.Connections["Main"] = game:GetService("RunService").Heartbeat:Connect(UpdateHighlights)
-            UpdateHighlights()
-        else
-            if HighlightSystem.Cache.Connections["Main"] then
-                HighlightSystem.Cache.Connections["Main"]:Disconnect()
+            HighlightSystem.Enabled = state
+            if state then
+                HighlightSystem.Cache.Connections["Main"] = game:GetService("RunService").Heartbeat:Connect(UpdateHighlights)
+                UpdateHighlights()
+            else
+                if HighlightSystem.Cache.Connections["Main"] then
+                    HighlightSystem.Cache.Connections["Main"]:Disconnect()
+                end
+                for _, h in pairs(HighlightSystem.Cache.Highlights) do 
+                    if h then h:Destroy() end 
+                end
+                HighlightSystem.Cache.Highlights = {}
             end
-            for _, h in pairs(HighlightSystem.Cache.Highlights) do h:Destroy() end
-            HighlightSystem.Cache.Highlights = {}
         end
-    end
-})
+    })
     
     local Toggle14 = Tab5:Toggle({
         Title = "绘制幸存者",
         Desc = "FIN",
         Locked = false,
         Callback = function(state)
-         HighlightSystem.Settings.ShowSurvivors = state
-        UpdateHighlights()
+            HighlightSystem.Settings.ShowSurvivors = state
+            UpdateHighlights()
         end
     })
     
@@ -1199,8 +1369,8 @@ end
         Desc = "FIN",
         Locked = false,
         Callback = function(state)
-        HighlightSystem.Settings.ShowKillers = state
-        UpdateHighlights()
+            HighlightSystem.Settings.ShowKillers = state
+            UpdateHighlights()
         end
     })
     
@@ -1209,487 +1379,487 @@ end
         Desc = "神秘电机",
         Locked = false,
         Callback = function(enabled)
-        if not _G.RealGeneratorESP then
-            _G.RealGeneratorESP = {
-                Active = false,
-                Data = {},
-                Connections = {}
-            }
-        end
-        
-        if not enabled then
-            if _G.RealGeneratorESP.Active then
-                for _, connection in pairs(_G.RealGeneratorESP.Connections) do
-                    if connection and connection.Connected then
-                        connection:Disconnect()
-                    end
-                end
-                
-                for gen, data in pairs(_G.RealGeneratorESP.Data) do
-                    if type(data) == "table" then
-                        if data.Billboard and data.Billboard.Parent then
-                            data.Billboard:Destroy()
-                        end
-                        if data.DistanceBillboard and data.DistanceBillboard.Parent then
-                            data.DistanceBillboard:Destroy()
-                        end
-                        if data.Highlight and data.Highlight.Parent then
-                            data.Highlight:Destroy()
+            if not _G.RealGeneratorESP then
+                _G.RealGeneratorESP = {
+                    Active = false,
+                    Data = {},
+                    Connections = {}
+                }
+            end
+            
+            if not enabled then
+                if _G.RealGeneratorESP.Active then
+                    for _, connection in pairs(_G.RealGeneratorESP.Connections) do
+                        if connection and connection.Connected then
+                            connection:Disconnect()
                         end
                     end
+                    
+                    for gen, data in pairs(_G.RealGeneratorESP.Data) do
+                        if type(data) == "table" then
+                            if data.Billboard and data.Billboard.Parent then
+                                data.Billboard:Destroy()
+                            end
+                            if data.DistanceBillboard and data.DistanceBillboard.Parent then
+                                data.DistanceBillboard:Destroy()
+                            end
+                            if data.Highlight and data.Highlight.Parent then
+                                data.Highlight:Destroy()
+                            end
+                        end
+                    end
+                    
+                    _G.RealGeneratorESP.Data = {}
+                    _G.RealGeneratorESP.Connections = {}
+                    _G.RealGeneratorESP.Active = false
                 end
-                
-                _G.RealGeneratorESP.Data = {}
-                _G.RealGeneratorESP.Connections = {}
-                _G.RealGeneratorESP.Active = false
-            end
-            return
-        end
-        
-        if _G.RealGeneratorESP.Active then
-            return
-        end
-        
-        _G.RealGeneratorESP.Active = true
-        
-        local scanInterval = 1.0
-        local lastScanTime = 0
-        local maxGenerators = 20
-        
-        local distanceSettings = {
-            MinDistance = 5,
-            MaxDistance = 500,
-            MinScale = 0.8,
-            MaxScale = 1.5,
-            MinTextSize = 8,
-            MaxTextSize = 10
-        }
-        
-        local function updateGeneratorESP(gen, data)
-            if not gen or not gen.Parent or not gen:FindFirstChild("Main") then
-                return false
-            end
-            
-            if table.getn(_G.RealGeneratorESP.Data) > maxGenerators then
-                return false
-            end
-            
-            if gen:FindFirstChild("Progress") then
-                local progress = gen.Progress.Value
-                if progress >= 99 then
-                    return false
-                end
-                
-                if data.TextLabel then
-                    data.TextLabel.Text = string.format("真电机: %d%%", progress)
-                end
-                
-                local character = game:GetService("Players").LocalPlayer.Character
-                local humanoidRootPart = character and character:FindFirstChild("HumanoidRootPart")
-                
-                if humanoidRootPart and data.DistanceLabel then
-                    local distance = (gen.Main.Position - humanoidRootPart.Position).Magnitude
-                    
-                    data.DistanceLabel.Text = string.format("距离: %d米", math.floor(distance))
-                    
-                    local distanceRatio = math.clamp(
-                        (distance - distanceSettings.MinDistance) / 
-                        (distanceSettings.MaxDistance - distanceSettings.MinDistance),
-                        0, 1
-                    )
-                    
-                    local scale = distanceSettings.MinScale + 
-                        distanceRatio * (distanceSettings.MaxScale - distanceSettings.MinScale)
-                    
-                    local textSize = distanceSettings.MinTextSize + 
-                        distanceRatio * (distanceSettings.MaxTextSize - distanceSettings.MinTextSize)
-                    
-                    if data.Billboard then 
-                        data.Billboard.Size = UDim2.new(4 * scale, 0, 1 * scale, 0)
-                        data.Billboard.Enabled = true
-                    end
-                    
-                    if data.DistanceBillboard then 
-                        data.DistanceBillboard.Size = UDim2.new(4 * scale, 0, 1 * scale, 0)
-                        data.DistanceBillboard.Enabled = true
-                    end
-                    
-                    if data.TextLabel then 
-                        data.TextLabel.TextSize = textSize
-                        data.TextLabel.Visible = true
-                    end
-                    
-                    if data.DistanceLabel then 
-                        data.DistanceLabel.TextSize = textSize
-                        data.DistanceLabel.Visible = true
-                    end
-                    
-                    if data.Highlight then
-                        data.Highlight.Enabled = true
-                        local transparency = math.clamp((distance - 50) / 100, 0, 0.4)
-                        data.Highlight.FillTransparency = 0.85 + (transparency * 0.5)
-                        data.Highlight.OutlineColor = Color3.fromRGB(0, 255, 0) -- 绿色
-                        data.Highlight.FillColor = Color3.fromRGB(0, 255, 0)
-                    end
-                end
-            end
-            
-            return true
-        end
-        
-        local function createGeneratorESP(gen)
-            if not gen or not gen:FindFirstChild("Main") or _G.RealGeneratorESP.Data[gen] then 
-                return 
-            end
-            
-            if table.getn(_G.RealGeneratorESP.Data) >= maxGenerators then
                 return
             end
             
-            local billboard = Instance.new("BillboardGui")
-            billboard.Name = "RealGeneratorESP"
-            billboard.Size = UDim2.new(4, 0, 1, 0)
-            billboard.StudsOffset = Vector3.new(0, 2.5, 0)
-            billboard.Adornee = gen.Main
-            billboard.Parent = gen.Main
-            billboard.AlwaysOnTop = true
-            billboard.Enabled = true
+            if _G.RealGeneratorESP.Active then
+                return
+            end
             
-            local textLabel = Instance.new("TextLabel")
-            textLabel.Size = UDim2.new(1, 0, 0.5, 0)
-            textLabel.BackgroundTransparency = 1
-            textLabel.TextScaled = false
-            textLabel.Text = "真电机加载中..."
-            textLabel.TextColor3 = Color3.fromRGB(0, 255, 0) -- 绿色
-            textLabel.Font = Enum.Font.Arcade
-            textLabel.TextStrokeTransparency = 0
-            textLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
-            textLabel.TextSize = 8
-            textLabel.Parent = billboard
+            _G.RealGeneratorESP.Active = true
             
-            local distanceBillboard = Instance.new("BillboardGui")
-            distanceBillboard.Name = "RealGeneratorDistanceESP"
-            distanceBillboard.Size = UDim2.new(4, 0, 1, 0)
-            distanceBillboard.StudsOffset = Vector3.new(0, 3.5, 0)
-            distanceBillboard.Adornee = gen.Main
-            distanceBillboard.Parent = gen.Main
-            distanceBillboard.AlwaysOnTop = true
-            distanceBillboard.Enabled = true
+            local scanInterval = 1.0
+            local lastScanTime = 0
+            local maxGenerators = 20
             
-            local distanceLabel = Instance.new("TextLabel")
-            distanceLabel.Size = UDim2.new(1, 0, 0.5, 0)
-            distanceLabel.BackgroundTransparency = 1
-            distanceLabel.TextScaled = false
-            distanceLabel.Text = "计算距离中..."
-            distanceLabel.TextColor3 = Color3.fromRGB(255, 255, 0)
-            distanceLabel.Font = Enum.Font.Arcade
-            distanceLabel.TextStrokeTransparency = 0
-            distanceLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
-            distanceLabel.TextSize = 8
-            distanceLabel.Parent = distanceBillboard
-            
-            local highlight = Instance.new("Highlight")
-            highlight.Name = "RealGeneratorHighlight"
-            highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
-            highlight.Enabled = true
-            highlight.OutlineColor = Color3.fromRGB(0, 255, 0) -- 绿色
-            highlight.FillColor = Color3.fromRGB(0, 255, 0)
-            highlight.FillTransparency = 0.9
-            highlight.OutlineTransparency = 0
-            highlight.Parent = gen
-            
-            _G.RealGeneratorESP.Data[gen] = {
-                Billboard = billboard,
-                DistanceBillboard = distanceBillboard,
-                TextLabel = textLabel,
-                DistanceLabel = distanceLabel,
-                Highlight = highlight
+            local distanceSettings = {
+                MinDistance = 5,
+                MaxDistance = 500,
+                MinScale = 0.8,
+                MaxScale = 1.5,
+                MinTextSize = 8,
+                MaxTextSize = 10
             }
             
-            local destroyConnection
-            destroyConnection = gen.Destroying:Connect(function()
-                if _G.RealGeneratorESP.Data[gen] then
-                    if _G.RealGeneratorESP.Data[gen].Billboard then 
-                        _G.RealGeneratorESP.Data[gen].Billboard:Destroy() 
-                    end
-                    if _G.RealGeneratorESP.Data[gen].DistanceBillboard then 
-                        _G.RealGeneratorESP.Data[gen].DistanceBillboard:Destroy() 
-                    end
-                    if _G.RealGeneratorESP.Data[gen].Highlight then 
-                        _G.RealGeneratorESP.Data[gen].Highlight:Destroy() 
-                    end
-                    _G.RealGeneratorESP.Data[gen] = nil
+            local function updateGeneratorESP(gen, data)
+                if not gen or not gen.Parent or not gen:FindFirstChild("Main") then
+                    return false
                 end
-                if destroyConnection then
-                    destroyConnection:Disconnect()
+                
+                if #_G.RealGeneratorESP.Data > maxGenerators then
+                    return false
                 end
-            end)
+                
+                if gen:FindFirstChild("Progress") then
+                    local progress = gen.Progress.Value
+                    if progress >= 99 then
+                        return false
+                    end
+                    
+                    if data.TextLabel then
+                        data.TextLabel.Text = string.format("真电机: %d%%", progress)
+                    end
+                    
+                    local character = game:GetService("Players").LocalPlayer.Character
+                    local humanoidRootPart = character and character:FindFirstChild("HumanoidRootPart")
+                    
+                    if humanoidRootPart and data.DistanceLabel then
+                        local distance = (gen.Main.Position - humanoidRootPart.Position).Magnitude
+                        
+                        data.DistanceLabel.Text = string.format("距离: %d米", math.floor(distance))
+                        
+                        local distanceRatio = math.clamp(
+                            (distance - distanceSettings.MinDistance) / 
+                            (distanceSettings.MaxDistance - distanceSettings.MinDistance),
+                            0, 1
+                        )
+                        
+                        local scale = distanceSettings.MinScale + 
+                            distanceRatio * (distanceSettings.MaxScale - distanceSettings.MinScale)
+                        
+                        local textSize = distanceSettings.MinTextSize + 
+                            distanceRatio * (distanceSettings.MaxTextSize - distanceSettings.MinTextSize)
+                        
+                        if data.Billboard then 
+                            data.Billboard.Size = UDim2.new(4 * scale, 0, 1 * scale, 0)
+                            data.Billboard.Enabled = true
+                        end
+                        
+                        if data.DistanceBillboard then 
+                            data.DistanceBillboard.Size = UDim2.new(4 * scale, 0, 1 * scale, 0)
+                            data.DistanceBillboard.Enabled = true
+                        end
+                        
+                        if data.TextLabel then 
+                            data.TextLabel.TextSize = textSize
+                            data.TextLabel.Visible = true
+                        end
+                        
+                        if data.DistanceLabel then 
+                            data.DistanceLabel.TextSize = textSize
+                            data.DistanceLabel.Visible = true
+                        end
+                        
+                        if data.Highlight then
+                            data.Highlight.Enabled = true
+                            local transparency = math.clamp((distance - 50) / 100, 0, 0.4)
+                            data.Highlight.FillTransparency = 0.85 + (transparency * 0.5)
+                            data.Highlight.OutlineColor = Color3.fromRGB(0, 255, 0)
+                            data.Highlight.FillColor = Color3.fromRGB(0, 255, 0)
+                        end
+                    end
+                end
+                
+                return true
+            end
             
-            table.insert(_G.RealGeneratorESP.Connections, destroyConnection)
-        end
-        
-        local function scanGenerators()
+            local function createGeneratorESP(gen)
+                if not gen or not gen:FindFirstChild("Main") or _G.RealGeneratorESP.Data[gen] then 
+                    return 
+                end
+                
+                if #_G.RealGeneratorESP.Data >= maxGenerators then
+                    return
+                end
+                
+                local billboard = Instance.new("BillboardGui")
+                billboard.Name = "RealGeneratorESP"
+                billboard.Size = UDim2.new(4, 0, 1, 0)
+                billboard.StudsOffset = Vector3.new(0, 2.5, 0)
+                billboard.Adornee = gen.Main
+                billboard.Parent = gen.Main
+                billboard.AlwaysOnTop = true
+                billboard.Enabled = true
+                
+                local textLabel = Instance.new("TextLabel")
+                textLabel.Size = UDim2.new(1, 0, 0.5, 0)
+                textLabel.BackgroundTransparency = 1
+                textLabel.TextScaled = false
+                textLabel.Text = "真电机加载中..."
+                textLabel.TextColor3 = Color3.fromRGB(0, 255, 0)
+                textLabel.Font = Enum.Font.Arcade
+                textLabel.TextStrokeTransparency = 0
+                textLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+                textLabel.TextSize = 8
+                textLabel.Parent = billboard
+                
+                local distanceBillboard = Instance.new("BillboardGui")
+                distanceBillboard.Name = "RealGeneratorDistanceESP"
+                distanceBillboard.Size = UDim2.new(4, 0, 1, 0)
+                distanceBillboard.StudsOffset = Vector3.new(0, 3.5, 0)
+                distanceBillboard.Adornee = gen.Main
+                distanceBillboard.Parent = gen.Main
+                distanceBillboard.AlwaysOnTop = true
+                distanceBillboard.Enabled = true
+                
+                local distanceLabel = Instance.new("TextLabel")
+                distanceLabel.Size = UDim2.new(1, 0, 0.5, 0)
+                distanceLabel.BackgroundTransparency = 1
+                distanceLabel.TextScaled = false
+                distanceLabel.Text = "计算距离中..."
+                distanceLabel.TextColor3 = Color3.fromRGB(255, 255, 0)
+                distanceLabel.Font = Enum.Font.Arcade
+                distanceLabel.TextStrokeTransparency = 0
+                distanceLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+                distanceLabel.TextSize = 8
+                distanceLabel.Parent = distanceBillboard
+                
+                local highlight = Instance.new("Highlight")
+                highlight.Name = "RealGeneratorHighlight"
+                highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+                highlight.Enabled = true
+                highlight.OutlineColor = Color3.fromRGB(0, 255, 0)
+                highlight.FillColor = Color3.fromRGB(0, 255, 0)
+                highlight.FillTransparency = 0.9
+                highlight.OutlineTransparency = 0
+                highlight.Parent = gen
+                
+                _G.RealGeneratorESP.Data[gen] = {
+                    Billboard = billboard,
+                    DistanceBillboard = distanceBillboard,
+                    TextLabel = textLabel,
+                    DistanceLabel = distanceLabel,
+                    Highlight = highlight
+                }
+                
+                local destroyConnection
+                destroyConnection = gen.Destroying:Connect(function()
+                    if _G.RealGeneratorESP.Data[gen] then
+                        if _G.RealGeneratorESP.Data[gen].Billboard then 
+                            _G.RealGeneratorESP.Data[gen].Billboard:Destroy() 
+                        end
+                        if _G.RealGeneratorESP.Data[gen].DistanceBillboard then 
+                            _G.RealGeneratorESP.Data[gen].DistanceBillboard:Destroy() 
+                        end
+                        if _G.RealGeneratorESP.Data[gen].Highlight then 
+                            _G.RealGeneratorESP.Data[gen].Highlight:Destroy() 
+                        end
+                        _G.RealGeneratorESP.Data[gen] = nil
+                    end
+                    if destroyConnection then
+                        destroyConnection:Disconnect()
+                    end
+                end)
+                
+                table.insert(_G.RealGeneratorESP.Connections, destroyConnection)
+            end
+            
+            local function scanGenerators()
+                local mapFolder = workspace:FindFirstChild("Map")
+                if mapFolder then
+                    local ingameFolder = mapFolder:FindFirstChild("Ingame")
+                    if ingameFolder then
+                        local mapSubFolder = ingameFolder:FindFirstChild("Map")
+                        if mapSubFolder then
+                            local generators = mapSubFolder:GetDescendants()
+                            for _, gen in pairs(generators) do
+                                if gen:IsA("Model") and gen:FindFirstChild("Main") and gen.Name == "Generator" then
+                                    createGeneratorESP(gen)
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+            
+            local mainConnection
             local mapFolder = workspace:FindFirstChild("Map")
             if mapFolder then
                 local ingameFolder = mapFolder:FindFirstChild("Ingame")
                 if ingameFolder then
                     local mapSubFolder = ingameFolder:FindFirstChild("Map")
                     if mapSubFolder then
-                        local generators = mapSubFolder:GetDescendants()
-                        for _, gen in pairs(generators) do
-                            if gen:IsA("Model") and gen:FindFirstChild("Main") and gen.Name == "Generator" then
-                                createGeneratorESP(gen)
+                        mainConnection = mapSubFolder.DescendantAdded:Connect(function(v)
+                            if v:IsA("Model") and v:FindFirstChild("Main") and v.Name == "Generator" then
+                                createGeneratorESP(v)
                             end
-                        end
+                        end)
                     end
                 end
             end
-        end
-        
-        local mainConnection
-        local mapFolder = workspace:FindFirstChild("Map")
-        if mapFolder then
-            local ingameFolder = mapFolder:FindFirstChild("Ingame")
-            if ingameFolder then
-                local mapSubFolder = ingameFolder:FindFirstChild("Map")
-                if mapSubFolder then
-                    mainConnection = mapSubFolder.DescendantAdded:Connect(function(v)
-                        if v:IsA("Model") and v:FindFirstChild("Main") and v.Name == "Generator" then
-                            createGeneratorESP(v)
-                        end
-                    end)
-                end
-            end
-        end
-        
-        if mainConnection then
-            table.insert(_G.RealGeneratorESP.Connections, mainConnection)
-        end
-        
-        local heartbeatConnection = game:GetService("RunService").Heartbeat:Connect(function(deltaTime)
-            lastScanTime = lastScanTime + deltaTime
-            if lastScanTime >= scanInterval then
-                lastScanTime = 0
-                scanGenerators()
+            
+            if mainConnection then
+                table.insert(_G.RealGeneratorESP.Connections, mainConnection)
             end
             
-            local gensToRemove = {}
-            for gen, data in pairs(_G.RealGeneratorESP.Data) do
-                if not gen or not gen.Parent then
-                    table.insert(gensToRemove, gen)
-                else
-                    if not updateGeneratorESP(gen, data) then
+            local heartbeatConnection = game:GetService("RunService").Heartbeat:Connect(function(deltaTime)
+                lastScanTime = lastScanTime + deltaTime
+                if lastScanTime >= scanInterval then
+                    lastScanTime = 0
+                    scanGenerators()
+                end
+                
+                local gensToRemove = {}
+                for gen, data in pairs(_G.RealGeneratorESP.Data) do
+                    if not gen or not gen.Parent then
                         table.insert(gensToRemove, gen)
+                    else
+                        if not updateGeneratorESP(gen, data) then
+                            table.insert(gensToRemove, gen)
+                        end
                     end
                 end
-            end
+                
+                for _, gen in ipairs(gensToRemove) do
+                    if _G.RealGeneratorESP.Data[gen] then
+                        if _G.RealGeneratorESP.Data[gen].Billboard then 
+                            _G.RealGeneratorESP.Data[gen].Billboard:Destroy() 
+                        end
+                        if _G.RealGeneratorESP.Data[gen].DistanceBillboard then 
+                            _G.RealGeneratorESP.Data[gen].DistanceBillboard:Destroy() 
+                        end
+                        if _G.RealGeneratorESP.Data[gen].Highlight then 
+                            _G.RealGeneratorESP.Data[gen].Highlight:Destroy() 
+                        end
+                        _G.RealGeneratorESP.Data[gen] = nil
+                    end
+                end
+            end)
             
-            for _, gen in ipairs(gensToRemove) do
-                if _G.RealGeneratorESP.Data[gen] then
-                    if _G.RealGeneratorESP.Data[gen].Billboard then 
-                        _G.RealGeneratorESP.Data[gen].Billboard:Destroy() 
-                    end
-                    if _G.RealGeneratorESP.Data[gen].DistanceBillboard then 
-                        _G.RealGeneratorESP.Data[gen].DistanceBillboard:Destroy() 
-                    end
-                    if _G.RealGeneratorESP.Data[gen].Highlight then 
-                        _G.RealGeneratorESP.Data[gen].Highlight:Destroy() 
-                    end
-                    _G.RealGeneratorESP.Data[gen] = nil
-                end
-            end
-        end)
-        
-        table.insert(_G.RealGeneratorESP.Connections, heartbeatConnection)
-        
-        scanGenerators()
-    end
-})
+            table.insert(_G.RealGeneratorESP.Connections, heartbeatConnection)
+            
+            scanGenerators()
+        end
+    })
     
     Tab5:Toggle({
         Title = "绘制假电机",
         Default = true,
         Callback = function(enabled)
-        if not _G.FakeGeneratorESP then
-            _G.FakeGeneratorESP = {
-                Active = false,
-                Data = {},
-                Connections = {}
-            }
-        end
-        
-        if not enabled then
+            if not _G.FakeGeneratorESP then
+                _G.FakeGeneratorESP = {
+                    Active = false,
+                    Data = {},
+                    Connections = {}
+                }
+            end
+            
+            if not enabled then
+                if _G.FakeGeneratorESP.Active then
+                    for _, connection in pairs(_G.FakeGeneratorESP.Connections) do
+                        if connection and connection.Connected then
+                            connection:Disconnect()
+                        end
+                    end
+                    
+                    for gen, data in pairs(_G.FakeGeneratorESP.Data) do
+                        if type(data) == "table" then
+                            if data.Highlight and data.Highlight.Parent then
+                                data.Highlight:Destroy()
+                            end
+                            if data.NameLabel and data.NameLabel.Parent then
+                                data.NameLabel:Destroy()
+                            end
+                        end
+                    end
+                    
+                    _G.FakeGeneratorESP.Data = {}
+                    _G.FakeGeneratorESP.Connections = {}
+                    _G.FakeGeneratorESP.Active = false
+                end
+                return
+            end
+            
             if _G.FakeGeneratorESP.Active then
-                for _, connection in pairs(_G.FakeGeneratorESP.Connections) do
-                    if connection and connection.Connected then
-                        connection:Disconnect()
-                    end
-                end
-                
-                for gen, data in pairs(_G.FakeGeneratorESP.Data) do
-                    if type(data) == "table" then
-                        if data.Highlight and data.Highlight.Parent then
-                            data.Highlight:Destroy()
-                        end
-                        if data.NameLabel and data.NameLabel.Parent then
-                            data.NameLabel:Destroy()
-                        end
-                    end
-                end
-                
-                _G.FakeGeneratorESP.Data = {}
-                _G.FakeGeneratorESP.Connections = {}
-                _G.FakeGeneratorESP.Active = false
-            end
-            return
-        end
-        
-        if _G.FakeGeneratorESP.Active then
-            _G.FakeGeneratorESP.Callback(false)
-        end
-        
-        _G.FakeGeneratorESP.Active = true
-        
-        local scanInterval = 1.0
-        local lastScanTime = 0
-        
-        local function createFakeGeneratorESP(gen)
-            if not gen or not gen:FindFirstChild("Main") or _G.FakeGeneratorESP.Data[gen] then 
-                return 
+                return
             end
             
-            local highlight = Instance.new("Highlight")
-            highlight.Name = "FakeGeneratorHighlight"
-            highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
-            highlight.Enabled = true
-            highlight.OutlineColor = Color3.fromRGB(255, 0, 0)
-            highlight.FillColor = Color3.fromRGB(255, 0, 0)
-            highlight.FillTransparency = 0.9
-            highlight.OutlineTransparency = 0
-            highlight.Parent = gen
+            _G.FakeGeneratorESP.Active = true
             
-            local nameBillboard = Instance.new("BillboardGui")
-            nameBillboard.Name = "FakeGeneratorNameESP"
-            nameBillboard.Size = UDim2.new(4, 0, 1, 0)
-            nameBillboard.StudsOffset = Vector3.new(0, 2.5, 0)
-            nameBillboard.Adornee = gen.Main
-            nameBillboard.Parent = gen.Main
-            nameBillboard.AlwaysOnTop = true
-            nameBillboard.Enabled = true
+            local scanInterval = 1.0
+            local lastScanTime = 0
             
-            local nameLabel = Instance.new("TextLabel")
-            nameLabel.Size = UDim2.new(1, 0, 1, 0)
-            nameLabel.BackgroundTransparency = 1
-            nameLabel.TextScaled = false
-            nameLabel.Text = "假电机"
-            nameLabel.TextColor3 = Color3.fromRGB(255, 0, 0)
-            nameLabel.Font = Enum.Font.Arcade
-            nameLabel.TextStrokeTransparency = 0
-            nameLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
-            nameLabel.TextSize = 12
-            nameLabel.Parent = nameBillboard
-            
-            _G.FakeGeneratorESP.Data[gen] = {
-                Highlight = highlight,
-                NameLabel = nameLabel,
-                NameBillboard = nameBillboard
-            }
-            
-            local destroyConnection
-            destroyConnection = gen.Destroying:Connect(function()
-                if _G.FakeGeneratorESP.Data[gen] then
-                    if _G.FakeGeneratorESP.Data[gen].Highlight then 
-                        _G.FakeGeneratorESP.Data[gen].Highlight:Destroy() 
-                    end
-                    if _G.FakeGeneratorESP.Data[gen].NameLabel then 
-                        _G.FakeGeneratorESP.Data[gen].NameLabel:Destroy() 
-                    end
-                    if _G.FakeGeneratorESP.Data[gen].NameBillboard then 
-                        _G.FakeGeneratorESP.Data[gen].NameBillboard:Destroy() 
-                    end
-                    _G.FakeGeneratorESP.Data[gen] = nil
+            local function createFakeGeneratorESP(gen)
+                if not gen or not gen:FindFirstChild("Main") or _G.FakeGeneratorESP.Data[gen] then 
+                    return 
                 end
-                if destroyConnection then
-                    destroyConnection:Disconnect()
-                end
-            end)
+                
+                local highlight = Instance.new("Highlight")
+                highlight.Name = "FakeGeneratorHighlight"
+                highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+                highlight.Enabled = true
+                highlight.OutlineColor = Color3.fromRGB(255, 0, 0)
+                highlight.FillColor = Color3.fromRGB(255, 0, 0)
+                highlight.FillTransparency = 0.9
+                highlight.OutlineTransparency = 0
+                highlight.Parent = gen
+                
+                local nameBillboard = Instance.new("BillboardGui")
+                nameBillboard.Name = "FakeGeneratorNameESP"
+                nameBillboard.Size = UDim2.new(4, 0, 1, 0)
+                nameBillboard.StudsOffset = Vector3.new(0, 2.5, 0)
+                nameBillboard.Adornee = gen.Main
+                nameBillboard.Parent = gen.Main
+                nameBillboard.AlwaysOnTop = true
+                nameBillboard.Enabled = true
+                
+                local nameLabel = Instance.new("TextLabel")
+                nameLabel.Size = UDim2.new(1, 0, 1, 0)
+                nameLabel.BackgroundTransparency = 1
+                nameLabel.TextScaled = false
+                nameLabel.Text = "假电机"
+                nameLabel.TextColor3 = Color3.fromRGB(255, 0, 0)
+                nameLabel.Font = Enum.Font.Arcade
+                nameLabel.TextStrokeTransparency = 0
+                nameLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+                nameLabel.TextSize = 12
+                nameLabel.Parent = nameBillboard
+                
+                _G.FakeGeneratorESP.Data[gen] = {
+                    Highlight = highlight,
+                    NameLabel = nameLabel,
+                    NameBillboard = nameBillboard
+                }
+                
+                local destroyConnection
+                destroyConnection = gen.Destroying:Connect(function()
+                    if _G.FakeGeneratorESP.Data[gen] then
+                        if _G.FakeGeneratorESP.Data[gen].Highlight then 
+                            _G.FakeGeneratorESP.Data[gen].Highlight:Destroy() 
+                        end
+                        if _G.FakeGeneratorESP.Data[gen].NameLabel then 
+                            _G.FakeGeneratorESP.Data[gen].NameLabel:Destroy() 
+                        end
+                        if _G.FakeGeneratorESP.Data[gen].NameBillboard then 
+                            _G.FakeGeneratorESP.Data[gen].NameBillboard:Destroy() 
+                        end
+                        _G.FakeGeneratorESP.Data[gen] = nil
+                    end
+                    if destroyConnection then
+                        destroyConnection:Disconnect()
+                    end
+                end)
+                
+                table.insert(_G.FakeGeneratorESP.Connections, destroyConnection)
+            end
             
-            table.insert(_G.FakeGeneratorESP.Connections, destroyConnection)
-        end
-        
-        local function scanGenerators()
+            local function scanGenerators()
+                local mapFolder = workspace:FindFirstChild("Map")
+                if mapFolder then
+                    local ingameFolder = mapFolder:FindFirstChild("Ingame")
+                    if ingameFolder then
+                        local mapSubFolder = ingameFolder:FindFirstChild("Map")
+                        if mapSubFolder then
+                            local generators = mapSubFolder:GetDescendants()
+                            for _, gen in pairs(generators) do
+                                if gen:IsA("Model") and gen:FindFirstChild("Main") and gen.Name == "FakeGenerator" then
+                                    createFakeGeneratorESP(gen)
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+            
+            local mainConnection
             local mapFolder = workspace:FindFirstChild("Map")
             if mapFolder then
                 local ingameFolder = mapFolder:FindFirstChild("Ingame")
                 if ingameFolder then
                     local mapSubFolder = ingameFolder:FindFirstChild("Map")
                     if mapSubFolder then
-                        local generators = mapSubFolder:GetDescendants()
-                        for _, gen in pairs(generators) do
-                            if gen:IsA("Model") and gen:FindFirstChild("Main") and gen.Name == "FakeGenerator" then
-                                createFakeGeneratorESP(gen)
+                        mainConnection = mapSubFolder.DescendantAdded:Connect(function(v)
+                            if v:IsA("Model") and v:FindFirstChild("Main") and v.Name == "FakeGenerator" then
+                                createFakeGeneratorESP(v)
                             end
-                        end
+                        end)
                     end
-                end
-            end
-        end
-        
-        local mainConnection
-        local mapFolder = workspace:FindFirstChild("Map")
-        if mapFolder then
-            local ingameFolder = mapFolder:FindFirstChild("Ingame")
-            if ingameFolder then
-                local mapSubFolder = ingameFolder:FindFirstChild("Map")
-                if mapSubFolder then
-                    mainConnection = mapSubFolder.DescendantAdded:Connect(function(v)
-                        if v:IsA("Model") and v:FindFirstChild("Main") and v.Name == "FakeGenerator" then
-                            createFakeGeneratorESP(v)
-                        end
-                    end)
-                end
-            end
-        end
-        
-        if mainConnection then
-            table.insert(_G.FakeGeneratorESP.Connections, mainConnection)
-        end
-        
-        local heartbeatConnection = game:GetService("RunService").Heartbeat:Connect(function(deltaTime)
-            lastScanTime = lastScanTime + deltaTime
-            if lastScanTime >= scanInterval then
-                lastScanTime = 0
-                scanGenerators()
-            end
-            
-            local gensToRemove = {}
-            for gen, data in pairs(_G.FakeGeneratorESP.Data) do
-                if not gen or not gen.Parent then
-                    table.insert(gensToRemove, gen)
                 end
             end
             
-            for _, gen in ipairs(gensToRemove) do
-                if _G.FakeGeneratorESP.Data[gen] then
-                    if _G.FakeGeneratorESP.Data[gen].Highlight then 
-                        _G.FakeGeneratorESP.Data[gen].Highlight:Destroy() 
-                    end
-                    if _G.FakeGeneratorESP.Data[gen].NameLabel then 
-                        _G.FakeGeneratorESP.Data[gen].NameLabel:Destroy() 
-                    end
-                    if _G.FakeGeneratorESP.Data[gen].NameBillboard then 
-                        _G.FakeGeneratorESP.Data[gen].NameBillboard:Destroy() 
-                    end
-                    _G.FakeGeneratorESP.Data[gen] = nil
-                end
+            if mainConnection then
+                table.insert(_G.FakeGeneratorESP.Connections, mainConnection)
             end
-        end)
-        
-        table.insert(_G.FakeGeneratorESP.Connections, heartbeatConnection)
-        
-        scanGenerators()
-    end
-})
+            
+            local heartbeatConnection = game:GetService("RunService").Heartbeat:Connect(function(deltaTime)
+                lastScanTime = lastScanTime + deltaTime
+                if lastScanTime >= scanInterval then
+                    lastScanTime = 0
+                    scanGenerators()
+                end
+                
+                local gensToRemove = {}
+                for gen, data in pairs(_G.FakeGeneratorESP.Data) do
+                    if not gen or not gen.Parent then
+                        table.insert(gensToRemove, gen)
+                    end
+                end
+                
+                for _, gen in ipairs(gensToRemove) do
+                    if _G.FakeGeneratorESP.Data[gen] then
+                        if _G.FakeGeneratorESP.Data[gen].Highlight then 
+                            _G.FakeGeneratorESP.Data[gen].Highlight:Destroy() 
+                        end
+                        if _G.FakeGeneratorESP.Data[gen].NameLabel then 
+                            _G.FakeGeneratorESP.Data[gen].NameLabel:Destroy() 
+                        end
+                        if _G.FakeGeneratorESP.Data[gen].NameBillboard then 
+                            _G.FakeGeneratorESP.Data[gen].NameBillboard:Destroy() 
+                        end
+                        _G.FakeGeneratorESP.Data[gen] = nil
+                    end
+                end
+            end)
+            
+            table.insert(_G.FakeGeneratorESP.Connections, heartbeatConnection)
+            
+            scanGenerators()
+        end
+    })
     
     local Tab6 = Window:Tab({
         Title = "美化与动作",
@@ -1786,7 +1956,7 @@ end
         else
             -- 关闭状态
             humanoid.PlatformStand = false
-            humanoid.JumpPower = 50  -- 恢复默认跳跃力
+            humanoid.JumpPower = 50
 
             local bodyVelocity = rootPart:FindFirstChildOfClass("BodyVelocity")
             if bodyVelocity then
@@ -1920,92 +2090,92 @@ end
         Desc = "高级",
         Locked = false,
         Callback = function()
-local player = game.Players.LocalPlayer  
-local character = player.Character or player.CharacterAdded:Wait()
+            local player = game.Players.LocalPlayer  
+            local character = player.Character or player.CharacterAdded:Wait()
 
-local bodyColors = character:FindFirstChild("Body Colors")
-if bodyColors then
-    bodyColors.HeadColor = BrickColor.new("Really black")
-    bodyColors.LeftArmColor = BrickColor.new("Really black")
-    bodyColors.RightArmColor = BrickColor.new("Really black")
-    bodyColors.LeftLegColor = BrickColor.new("Really black")
-    bodyColors.RightLegColor = BrickColor.new("Really black")
-    bodyColors.TorsoColor = BrickColor.new("Really black")
-end
+            local bodyColors = character:FindFirstChild("Body Colors")
+            if bodyColors then
+                bodyColors.HeadColor = BrickColor.new("Really black")
+                bodyColors.LeftArmColor = BrickColor.new("Really black")
+                bodyColors.RightArmColor = BrickColor.new("Really black")
+                bodyColors.LeftLegColor = BrickColor.new("Really black")
+                bodyColors.RightLegColor = BrickColor.new("Really black")
+                bodyColors.TorsoColor = BrickColor.new("Really black")
+            end
 
-for _, obj in pairs(character:GetDescendants()) do
-    if obj.Name == "Mask" then
-        obj:Destroy()
-    end
-end
+            for _, obj in pairs(character:GetDescendants()) do
+                if obj.Name == "Mask" then
+                    obj:Destroy()
+                end
+            end
 
-local shirt = character:FindFirstChildOfClass("Shirt") or Instance.new("Shirt", character)
-shirt.ShirtTemplate = "http://www.roblox.com/asset/?id=130919586308395"
+            local shirt = character:FindFirstChildOfClass("Shirt") or Instance.new("Shirt", character)
+            shirt.ShirtTemplate = "http://www.roblox.com/asset/?id=130919586308395"
 
-local pants = character:FindFirstChildOfClass("Pants") or Instance.new("Pants", character)
-pants.PantsTemplate = "http://www.roblox.com/asset/?id=83940216283729"
+            local pants = character:FindFirstChildOfClass("Pants") or Instance.new("Pants", character)
+            pants.PantsTemplate = "http://www.roblox.com/asset/?id=83940216283729"
 
-local function addAccessory(name, meshId, textureId, parentPartName, handleSize, position, rotation, customWeldC0, customWeldC1, meshScale, meshOffset)
-    local accessory = Instance.new("Accessory")
-    accessory.Name = name
-    local handle = Instance.new("Part")
-    handle.Name = "Handle"
-    handle.Size = Vector3.new(unpack(handleSize))
-    handle.CanCollide = false
-    handle.Anchored = false
-    handle.Parent = accessory
-    local mesh = Instance.new("SpecialMesh", handle)
-    mesh.MeshId = meshId
-    if textureId ~= "" then
-        mesh.TextureId = textureId
-    end
-    if meshScale then
-        mesh.Scale = Vector3.new(unpack(meshScale))
-    else
-        mesh.Scale = Vector3.new(1, 1, 1)
-    end
-    if meshOffset then
-        mesh.Offset = Vector3.new(unpack(meshOffset))
-    else
-        mesh.Offset = Vector3.new(0, 0, 0)
-    end
-    local targetPart = character:FindFirstChild(parentPartName)
-    if not targetPart then
-        warn("Target part '" .. parentPartName .. "' not found in character!")
-        return
-    end
-    local weld = Instance.new("Weld")
-    weld.Part0 = targetPart
-    weld.Part1 = handle
-    if customWeldC0 and customWeldC1 then
-        weld.C0 = CFrame.new(unpack(customWeldC0))
-        weld.C1 = CFrame.new(unpack(customWeldC1))
-    else
-        weld.C0 = CFrame.new(unpack(position)) * CFrame.Angles(math.rad(rotation[1]), math.rad(rotation[2]), math.rad(rotation[3]))
-    end
-    weld.Parent = handle
-    accessory.Parent = character
-end
+            local function addAccessory(name, meshId, textureId, parentPartName, handleSize, position, rotation, customWeldC0, customWeldC1, meshScale, meshOffset)
+                local accessory = Instance.new("Accessory")
+                accessory.Name = name
+                local handle = Instance.new("Part")
+                handle.Name = "Handle"
+                handle.Size = Vector3.new(unpack(handleSize))
+                handle.CanCollide = false
+                handle.Anchored = false
+                handle.Parent = accessory
+                local mesh = Instance.new("SpecialMesh", handle)
+                mesh.MeshId = meshId
+                if textureId ~= "" then
+                    mesh.TextureId = textureId
+                end
+                if meshScale then
+                    mesh.Scale = Vector3.new(unpack(meshScale))
+                else
+                    mesh.Scale = Vector3.new(1, 1, 1)
+                end
+                if meshOffset then
+                    mesh.Offset = Vector3.new(unpack(meshOffset))
+                else
+                    mesh.Offset = Vector3.new(0, 0, 0)
+                end
+                local targetPart = character:FindFirstChild(parentPartName)
+                if not targetPart then
+                    warn("Target part '" .. parentPartName .. "' not found in character!")
+                    return
+                end
+                local weld = Instance.new("Weld")
+                weld.Part0 = targetPart
+                weld.Part1 = handle
+                if customWeldC0 and customWeldC1 then
+                    weld.C0 = CFrame.new(unpack(customWeldC0))
+                    weld.C1 = CFrame.new(unpack(customWeldC1))
+                else
+                    weld.C0 = CFrame.new(unpack(position)) * CFrame.Angles(math.rad(rotation[1]), math.rad(rotation[2]), math.rad(rotation[3]))
+                end
+                weld.Parent = handle
+                accessory.Parent = character
+            end
 
-addAccessory(
-    "Scarf", 
-    "rbxassetid://131343945015522", 
-    "rbxassetid://78916578261510", 
-    "Scarf", 
-    {1, 0.5, 1},
-    {0, 0, 0},
-    {0, 0, 0}
-)
+            addAccessory(
+                "Scarf", 
+                "rbxassetid://131343945015522", 
+                "rbxassetid://78916578261510", 
+                "Scarf", 
+                {1, 0.5, 1},
+                {0, 0, 0},
+                {0, 0, 0}
+            )
 
-addAccessory(
-    "NewMask", 
-    "rbxassetid://119998744532277", 
-    "rbxassetid://85762572283089", 
-    "Head", 
-    {1, 1, 1},
-    {0, 0, 0},
-    {0, 260, 0}
-)
+            addAccessory(
+                "NewMask", 
+                "rbxassetid://119998744532277", 
+                "rbxassetid://85762572283089", 
+                "Head", 
+                {1, 1, 1},
+                {0, 0, 0},
+                {0, 260, 0}
+            )
         end
     })
     
@@ -2109,4 +2279,4 @@ addAccessory(
             end)
         end
     })
- end
+end
