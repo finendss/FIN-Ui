@@ -31,11 +31,11 @@ WindUI:Popup({
     Content = "尊敬的：" .. game.Players.LocalPlayer.Name,
     Buttons = {
         {
-            Title = "启动FinSaken",
+            Title = "启动XP KFI",
             Icon = "arrow-right",
             Variant = "Primary",
             Callback = function()
-                print("启动FIN")
+                print("启动XP")
                 -- 创建主窗口
                 createMainWindow()
             end
