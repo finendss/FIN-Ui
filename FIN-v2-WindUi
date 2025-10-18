@@ -10911,7 +10911,7 @@ ar:SetToTheCenter()
 ar:Dialog{
 
 Title="关闭FIN-v2-Hub",
-Content="关闭后无法打开FIN-Ui窗口 需要重新加载脚本是否关闭",
+Content="关闭后无法打开FIN-Ui窗口 需要重新加载脚本是否关闭.",
 Buttons={
 {
 Title="取消",
