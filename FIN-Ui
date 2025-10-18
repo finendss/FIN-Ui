@@ -161,4 +161,11 @@ task.wait(0.2)
         end
     })
 
+    Tab:Dropdown({
+        Title = "一个下拉菜单",
+        Values = {"神秘", "喵喵喵", "哈基米", "大狗脚脚脚"},
+        Value = "神秘",
+        Callback = function()
 
+        end
+     })
