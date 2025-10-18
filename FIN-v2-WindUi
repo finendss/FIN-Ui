@@ -10910,17 +10910,17 @@ if not ar.IgnoreAlerts then
 ar:SetToTheCenter()
 ar:Dialog{
 
-Title="妈妈妈妈妈妈妈妈妈妈",
-Content="Do you want to close this window? You will not be able to open it again.",
+Title="关闭FIN-v2-Hub",
+Content="关闭后无法打开FIN-Ui窗口 需要重新加载脚本是否关闭",
 Buttons={
 {
-Title="Cancel",
+Title="取消",
 
 Callback=function()end,
 Variant="Secondary",
 },
 {
-Title="Close Window",
+Title="残忍关闭",
 
 Callback=function()ar:Destroy()end,
 Variant="Primary",
