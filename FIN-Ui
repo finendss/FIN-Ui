@@ -87,19 +87,6 @@ WindUI:Popup({
         Draggable = true,
     })
 
-    -- 添加彩虹边框效果
-    Window:EditOpenButton({
-        StrokeColor = ColorSequence.new({
-            ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 0, 0)),
-            ColorSequenceKeypoint.new(0.2, Color3.fromRGB(255, 165, 0)),
-            ColorSequenceKeypoint.new(0.4, Color3.fromRGB(255, 255, 0)),
-            ColorSequenceKeypoint.new(0.6, Color3.fromRGB(0, 255, 0)),
-            ColorSequenceKeypoint.new(0.8, Color3.fromRGB(0, 0, 255)),
-            ColorSequenceKeypoint.new(1, Color3.fromRGB(128, 0, 128))
-        }),
-        StrokeThickness = 3,
-    })
-
     local MainTab = Window:Tab({ --前面加这个会更好一点点
         Title = "标签页",
         Icon = "zap",
