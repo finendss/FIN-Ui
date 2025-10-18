@@ -75,17 +75,23 @@ WindUI:Popup({
         Color = Color3.fromHex("#000000")
     })
     
-    Window:EditOpenButton({
-        Title = "FIN-Ui示例",
-        Icon = "star",
-        CornerRadius = UDim.new(0,16),
-        StrokeThickness = 2,
-        Color = ColorSequence.new(
-            Color3.fromHex("FF0F7B"),
-            Color3.fromHex("F89B29")
-        ),
-        Draggable = true,
-    })
+    task.wait(0.3)
+
+Window:EditOpenButton({
+    Title = "FIN-Ui示例",
+    Icon = "monitor",
+    CornerRadius = UDim.new(0,16),
+    StrokeThickness = 2,
+    Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0, Color3.fromHex("FF0000")),
+        ColorSequenceKeypoint.new(0.66, Color3.fromHex("0000FF")),
+        ColorSequenceKeypoint.new(0.83, Color3.fromHex("4B0082")),
+        ColorSequenceKeypoint.new(1, Color3.fromHex("9400D3"))
+    }),
+    Draggable = true,
+})
+
+task.wait(0.2)
 
     local MainTab = Window:Tab({ --前面加这个会更好一点点
         Title = "标签页",
