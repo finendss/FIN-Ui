@@ -39,7 +39,7 @@ WindUI:Popup({
         },
         SideBarWidth = 200,
         ScrollBarEnabled = true,
-        Background = "rbxassetid://73416826039813"
+        Background = "rbxassetid://1010101010"
     })
     
     local TimeTag = Window:Tag({
