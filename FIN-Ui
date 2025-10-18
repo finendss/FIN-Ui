@@ -131,6 +131,34 @@ task.wait(0.2)
         Icon = "drama",
         Locked = false,
     })
+
+    Tab:Button({ --Tab后面随着标签页的Tab数一起123456
+        Title = "一个按钮",
+        Default = true,
+        Callback = function()
+
+        end
+    })
+
+    Tab:Toggle({
+        Title = "一个开关",
+        Default = true,
+        Callback = function()
     
+        end
+    })
+
+    Tab:Slider({
+        Title = "一个滑块",
+        Value = {
+            Min = 50,
+            Max = 100,
+            Default = 70,
+        },
+        Increment = 1,
+        Callback = function()
+
+        end
+    })
 
 
