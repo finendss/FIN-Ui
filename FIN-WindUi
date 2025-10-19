@@ -10910,7 +10910,7 @@ if not ar.IgnoreAlerts then
 ar:SetToTheCenter()
 ar:Dialog{
 
-Title="关闭FIN-v2-Hub",
+Title="关闭FIN-Ui",
 Content="关闭后无法打开FIN-Ui窗口 需要重新加载脚本是否关闭.",
 Buttons={
 {
