@@ -1,5 +1,0 @@
-{
-  "blacklist_name": {
-    "BadPlayer": { "reason": "测试封禁", "time": 3600, "start": 1730000000 }
-  }
-}
